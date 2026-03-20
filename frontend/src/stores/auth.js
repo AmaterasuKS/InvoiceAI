@@ -1,16 +1,5 @@
 import { defineStore } from "pinia";
-
-const TOKEN_KEY = "invoiceai_token";
-
-async function parseJsonResponse(res) {
-  const text = await res.text();
-  if (!text) return {};
-  try {
-    return JSON.parse(text);
-  } catch {
-    return {};
-  }
-}
+import { api, TOKEN_KEY, getApiErrorMessage } from "@/api";
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
@@ -54,22 +43,15 @@ export const useAuthStore = defineStore("auth", {
       this.loading = true;
       this.error = null;
       try {
-        const res = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const data = await parseJsonResponse(res);
-        if (!res.ok) {
-          throw new Error(data.message || "Не удалось зарегистрироваться");
-        }
+        const { data } = await api.post("auth/register", payload);
         this.persistToken(data.token);
         this.user = data.user ?? null;
         await this.fetchMe();
         return data;
       } catch (e) {
-        this.error = e.message || "Ошибка регистрации";
-        throw e;
+        const msg = getApiErrorMessage(e, "Не удалось зарегистрироваться");
+        this.error = msg;
+        throw new Error(msg);
       } finally {
         this.loading = false;
       }
@@ -79,22 +61,15 @@ export const useAuthStore = defineStore("auth", {
       this.loading = true;
       this.error = null;
       try {
-        const res = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        const data = await parseJsonResponse(res);
-        if (!res.ok) {
-          throw new Error(data.message || "Неверный email или пароль");
-        }
+        const { data } = await api.post("auth/login", payload);
         this.persistToken(data.token);
         this.user = data.user ?? null;
         await this.fetchMe();
         return data;
       } catch (e) {
-        this.error = e.message || "Ошибка входа";
-        throw e;
+        const msg = getApiErrorMessage(e, "Неверный email или пароль");
+        this.error = msg;
+        throw new Error(msg);
       } finally {
         this.loading = false;
       }
@@ -108,24 +83,13 @@ export const useAuthStore = defineStore("auth", {
       this.loading = true;
       this.error = null;
       try {
-        const res = await fetch("/api/auth/me", {
-          headers: {
-            ...this.authHeader,
-          },
-        });
-        const data = await parseJsonResponse(res);
-        if (res.status === 401) {
-          this.clearSession();
-          throw new Error(data.message || "Сессия истекла");
-        }
-        if (!res.ok) {
-          throw new Error(data.message || "Не удалось загрузить профиль");
-        }
+        const { data } = await api.get("auth/me");
         this.user = data.user ?? null;
         return this.user;
       } catch (e) {
-        this.error = e.message || "Ошибка профиля";
-        throw e;
+        const msg = getApiErrorMessage(e, "Не удалось загрузить профиль");
+        this.error = msg;
+        throw new Error(msg);
       } finally {
         this.loading = false;
       }
@@ -136,23 +100,13 @@ export const useAuthStore = defineStore("auth", {
       this.loading = true;
       this.error = null;
       try {
-        const res = await fetch("/api/auth/me", {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            ...this.authHeader,
-          },
-          body: JSON.stringify(patch),
-        });
-        const data = await parseJsonResponse(res);
-        if (!res.ok) {
-          throw new Error(data.message || "Не удалось обновить профиль");
-        }
+        const { data } = await api.patch("auth/me", patch);
         this.user = data.user ?? null;
         return this.user;
       } catch (e) {
-        this.error = e.message || "Ошибка обновления профиля";
-        throw e;
+        const msg = getApiErrorMessage(e, "Не удалось обновить профиль");
+        this.error = msg;
+        throw new Error(msg);
       } finally {
         this.loading = false;
       }

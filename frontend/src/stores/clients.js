@@ -1,25 +1,12 @@
 import { defineStore } from "pinia";
 import { useAuthStore } from "@/stores/auth";
+import { api, getApiErrorMessage } from "@/api";
 
-async function parseJsonResponse(res) {
-  const text = await res.text();
-  if (!text) return {};
-  try {
-    return JSON.parse(text);
-  } catch {
-    return {};
-  }
-}
-
-function authHeaders() {
+function ensureAuth() {
   const auth = useAuthStore();
   if (!auth.token) {
     throw new Error("Требуется авторизация");
   }
-  return {
-    Authorization: `Bearer ${auth.token}`,
-    "Content-Type": "application/json",
-  };
 }
 
 export const useClientsStore = defineStore("clients", {
@@ -34,79 +21,47 @@ export const useClientsStore = defineStore("clients", {
 
   actions: {
     async fetchList(params = {}) {
+      ensureAuth();
       this.loading = true;
       this.error = null;
       try {
-        const q = new URLSearchParams();
-        if (params.search) q.set("search", params.search);
-        if (params.limit != null) q.set("limit", String(params.limit));
-        if (params.offset != null) q.set("offset", String(params.offset));
-        const qs = q.toString();
-        const res = await fetch(`/api/clients${qs ? `?${qs}` : ""}`, {
-          headers: authHeaders(),
-        });
-        const data = await parseJsonResponse(res);
-        if (res.status === 401) {
-          useAuthStore().clearSession();
-          throw new Error(data.message || "Сессия истекла");
-        }
-        if (!res.ok) {
-          throw new Error(data.message || "Не удалось загрузить клиентов");
-        }
+        const { data } = await api.get("clients", { params });
         this.items = data.items ?? [];
         this.total = data.total ?? 0;
         return data;
       } catch (e) {
-        this.error = e.message || "Ошибка загрузки клиентов";
-        throw e;
+        const msg = getApiErrorMessage(e, "Не удалось загрузить клиентов");
+        this.error = msg;
+        throw new Error(msg);
       } finally {
         this.loading = false;
       }
     },
 
     async fetchOne(id) {
+      ensureAuth();
       this.loading = true;
       this.error = null;
       try {
-        const res = await fetch(`/api/clients/${id}`, {
-          headers: authHeaders(),
-        });
-        const data = await parseJsonResponse(res);
-        if (res.status === 401) {
-          useAuthStore().clearSession();
-          throw new Error(data.message || "Сессия истекла");
-        }
-        if (!res.ok) {
-          throw new Error(data.message || "Клиент не найден");
-        }
+        const { data } = await api.get(`clients/${id}`);
         this.current = data.client ?? null;
         this.currentAnalytics = data.analytics ?? null;
         return data;
       } catch (e) {
-        this.error = e.message || "Ошибка загрузки клиента";
-        throw e;
+        const msg = getApiErrorMessage(e, "Клиент не найден");
+        this.error = msg;
+        throw new Error(msg);
       } finally {
         this.loading = false;
       }
     },
 
     async create(payload) {
+      ensureAuth();
       this.loading = true;
       this.error = null;
       try {
-        const res = await fetch("/api/clients", {
-          method: "POST",
-          headers: authHeaders(),
-          body: JSON.stringify(payload),
-        });
-        const data = await parseJsonResponse(res);
-        if (res.status === 401) {
-          useAuthStore().clearSession();
-          throw new Error(data.message || "Сессия истекла");
-        }
-        if (!res.ok) {
-          throw new Error(data.message || "Не удалось создать клиента");
-        }
+        const { data } = await api.post("clients", payload);
         const client = data.client;
         if (client) {
           this.items = [client, ...this.items];
@@ -114,30 +69,20 @@ export const useClientsStore = defineStore("clients", {
         }
         return client;
       } catch (e) {
-        this.error = e.message || "Ошибка создания клиента";
-        throw e;
+        const msg = getApiErrorMessage(e, "Не удалось создать клиента");
+        this.error = msg;
+        throw new Error(msg);
       } finally {
         this.loading = false;
       }
     },
 
     async update(id, patch) {
+      ensureAuth();
       this.loading = true;
       this.error = null;
       try {
-        const res = await fetch(`/api/clients/${id}`, {
-          method: "PATCH",
-          headers: authHeaders(),
-          body: JSON.stringify(patch),
-        });
-        const data = await parseJsonResponse(res);
-        if (res.status === 401) {
-          useAuthStore().clearSession();
-          throw new Error(data.message || "Сессия истекла");
-        }
-        if (!res.ok) {
-          throw new Error(data.message || "Не удалось обновить клиента");
-        }
+        const { data } = await api.patch(`clients/${id}`, patch);
         const client = data.client;
         if (client) {
           const idx = this.items.findIndex((c) => c.id === client.id);
@@ -146,40 +91,31 @@ export const useClientsStore = defineStore("clients", {
         }
         return client;
       } catch (e) {
-        this.error = e.message || "Ошибка обновления клиента";
-        throw e;
+        const msg = getApiErrorMessage(e, "Не удалось обновить клиента");
+        this.error = msg;
+        throw new Error(msg);
       } finally {
         this.loading = false;
       }
     },
 
     async remove(id) {
+      ensureAuth();
       this.loading = true;
       this.error = null;
       try {
-        const res = await fetch(`/api/clients/${id}`, {
-          method: "DELETE",
-          headers: { Authorization: authHeaders().Authorization },
-        });
-        if (res.status === 401) {
-          const data = await parseJsonResponse(res);
-          useAuthStore().clearSession();
-          throw new Error(data.message || "Сессия истекла");
+        await api.delete(`clients/${id}`);
+        this.items = this.items.filter((c) => c.id !== id);
+        this.total = Math.max(0, (this.total || 1) - 1);
+        if (this.current?.id === id) {
+          this.current = null;
+          this.currentAnalytics = null;
         }
-        if (res.status === 204) {
-          this.items = this.items.filter((c) => c.id !== id);
-          this.total = Math.max(0, (this.total || 1) - 1);
-          if (this.current?.id === id) {
-            this.current = null;
-            this.currentAnalytics = null;
-          }
-          return true;
-        }
-        const data = await parseJsonResponse(res);
-        throw new Error(data.message || "Не удалось удалить клиента");
+        return true;
       } catch (e) {
-        this.error = e.message || "Ошибка удаления клиента";
-        throw e;
+        const msg = getApiErrorMessage(e, "Не удалось удалить клиента");
+        this.error = msg;
+        throw new Error(msg);
       } finally {
         this.loading = false;
       }

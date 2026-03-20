@@ -1,35 +1,12 @@
 import { defineStore } from "pinia";
 import { useAuthStore } from "@/stores/auth";
+import { api, getApiErrorMessage } from "@/api";
 
-async function parseJsonResponse(res) {
-  const text = await res.text();
-  if (!text) return {};
-  try {
-    return JSON.parse(text);
-  } catch {
-    return {};
-  }
-}
-
-function authHeadersJson() {
+function ensureAuth() {
   const auth = useAuthStore();
   if (!auth.token) {
     throw new Error("Требуется авторизация");
   }
-  return {
-    Authorization: `Bearer ${auth.token}`,
-    "Content-Type": "application/json",
-  };
-}
-
-function authHeadersBare() {
-  const auth = useAuthStore();
-  if (!auth.token) {
-    throw new Error("Требуется авторизация");
-  }
-  return {
-    Authorization: `Bearer ${auth.token}`,
-  };
 }
 
 export const useInvoicesStore = defineStore("invoices", {
@@ -45,108 +22,63 @@ export const useInvoicesStore = defineStore("invoices", {
 
   actions: {
     async fetchNextNumber(prefix = "INV") {
+      ensureAuth();
       this.nextNumberLoading = true;
       this.error = null;
       try {
-        const q = new URLSearchParams({ prefix });
-        const res = await fetch(`/api/invoices/next-number?${q}`, {
-          headers: authHeadersBare(),
-        });
-        const data = await parseJsonResponse(res);
-        if (res.status === 401) {
-          useAuthStore().clearSession();
-          throw new Error(data.message || "Сессия истекла");
-        }
-        if (!res.ok) {
-          throw new Error(data.message || "Не удалось получить номер");
-        }
+        const { data } = await api.get("invoices/next-number", { params: { prefix } });
         return data.invoiceNumber;
       } catch (e) {
-        this.error = e.message || "Ошибка номера инвойса";
-        throw e;
+        const msg = getApiErrorMessage(e, "Не удалось получить номер");
+        this.error = msg;
+        throw new Error(msg);
       } finally {
         this.nextNumberLoading = false;
       }
     },
 
     async fetchList(params = {}) {
+      ensureAuth();
       this.loading = true;
       this.error = null;
       try {
-        const q = new URLSearchParams();
-        if (params.status) q.set("status", params.status);
-        if (params.clientId) q.set("clientId", params.clientId);
-        if (params.fromDate) q.set("fromDate", params.fromDate);
-        if (params.toDate) q.set("toDate", params.toDate);
-        if (params.limit != null) q.set("limit", String(params.limit));
-        if (params.offset != null) q.set("offset", String(params.offset));
-        if (params.sort) q.set("sort", params.sort);
-        const qs = q.toString();
-        const res = await fetch(`/api/invoices${qs ? `?${qs}` : ""}`, {
-          headers: authHeadersBare(),
-        });
-        const data = await parseJsonResponse(res);
-        if (res.status === 401) {
-          useAuthStore().clearSession();
-          throw new Error(data.message || "Сессия истекла");
-        }
-        if (!res.ok) {
-          throw new Error(data.message || "Не удалось загрузить инвойсы");
-        }
+        const { data } = await api.get("invoices", { params });
         this.items = data.items ?? [];
         this.total = data.total ?? 0;
         return data;
       } catch (e) {
-        this.error = e.message || "Ошибка загрузки инвойсов";
-        throw e;
+        const msg = getApiErrorMessage(e, "Не удалось загрузить инвойсы");
+        this.error = msg;
+        throw new Error(msg);
       } finally {
         this.loading = false;
       }
     },
 
     async fetchOne(id) {
+      ensureAuth();
       this.loading = true;
       this.error = null;
       try {
-        const res = await fetch(`/api/invoices/${id}`, {
-          headers: authHeadersBare(),
-        });
-        const data = await parseJsonResponse(res);
-        if (res.status === 401) {
-          useAuthStore().clearSession();
-          throw new Error(data.message || "Сессия истекла");
-        }
-        if (!res.ok) {
-          throw new Error(data.message || "Инвойс не найден");
-        }
+        const { data } = await api.get(`invoices/${id}`);
         this.current = data.invoice ?? null;
         this.currentClient = data.client ?? null;
         return data;
       } catch (e) {
-        this.error = e.message || "Ошибка загрузки инвойса";
-        throw e;
+        const msg = getApiErrorMessage(e, "Инвойс не найден");
+        this.error = msg;
+        throw new Error(msg);
       } finally {
         this.loading = false;
       }
     },
 
     async create(payload) {
+      ensureAuth();
       this.loading = true;
       this.error = null;
       try {
-        const res = await fetch("/api/invoices", {
-          method: "POST",
-          headers: authHeadersJson(),
-          body: JSON.stringify(payload),
-        });
-        const data = await parseJsonResponse(res);
-        if (res.status === 401) {
-          useAuthStore().clearSession();
-          throw new Error(data.message || "Сессия истекла");
-        }
-        if (!res.ok) {
-          throw new Error(data.message || "Не удалось создать инвойс");
-        }
+        const { data } = await api.post("invoices", payload);
         this.current = data.invoice ?? null;
         this.currentClient = data.client ?? null;
         if (this.current) {
@@ -155,30 +87,20 @@ export const useInvoicesStore = defineStore("invoices", {
         }
         return data;
       } catch (e) {
-        this.error = e.message || "Ошибка создания инвойса";
-        throw e;
+        const msg = getApiErrorMessage(e, "Не удалось создать инвойс");
+        this.error = msg;
+        throw new Error(msg);
       } finally {
         this.loading = false;
       }
     },
 
     async update(id, patch) {
+      ensureAuth();
       this.loading = true;
       this.error = null;
       try {
-        const res = await fetch(`/api/invoices/${id}`, {
-          method: "PATCH",
-          headers: authHeadersJson(),
-          body: JSON.stringify(patch),
-        });
-        const data = await parseJsonResponse(res);
-        if (res.status === 401) {
-          useAuthStore().clearSession();
-          throw new Error(data.message || "Сессия истекла");
-        }
-        if (!res.ok) {
-          throw new Error(data.message || "Не удалось обновить инвойс");
-        }
+        const { data } = await api.patch(`invoices/${id}`, patch);
         this.current = data.invoice ?? null;
         this.currentClient = data.client ?? null;
         if (this.current) {
@@ -187,40 +109,31 @@ export const useInvoicesStore = defineStore("invoices", {
         }
         return data;
       } catch (e) {
-        this.error = e.message || "Ошибка обновления инвойса";
-        throw e;
+        const msg = getApiErrorMessage(e, "Не удалось обновить инвойс");
+        this.error = msg;
+        throw new Error(msg);
       } finally {
         this.loading = false;
       }
     },
 
     async remove(id) {
+      ensureAuth();
       this.loading = true;
       this.error = null;
       try {
-        const res = await fetch(`/api/invoices/${id}`, {
-          method: "DELETE",
-          headers: authHeadersBare(),
-        });
-        if (res.status === 401) {
-          const data = await parseJsonResponse(res);
-          useAuthStore().clearSession();
-          throw new Error(data.message || "Сессия истекла");
+        await api.delete(`invoices/${id}`);
+        this.items = this.items.filter((inv) => inv.id !== id);
+        this.total = Math.max(0, (this.total || 1) - 1);
+        if (this.current?.id === id) {
+          this.current = null;
+          this.currentClient = null;
         }
-        if (res.status === 204) {
-          this.items = this.items.filter((inv) => inv.id !== id);
-          this.total = Math.max(0, (this.total || 1) - 1);
-          if (this.current?.id === id) {
-            this.current = null;
-            this.currentClient = null;
-          }
-          return true;
-        }
-        const data = await parseJsonResponse(res);
-        throw new Error(data.message || "Не удалось удалить инвойс");
+        return true;
       } catch (e) {
-        this.error = e.message || "Ошибка удаления инвойса";
-        throw e;
+        const msg = getApiErrorMessage(e, "Не удалось удалить инвойс");
+        this.error = msg;
+        throw new Error(msg);
       } finally {
         this.loading = false;
       }
