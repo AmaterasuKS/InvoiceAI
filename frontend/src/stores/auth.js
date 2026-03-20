@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import { api, TOKEN_KEY, getApiErrorMessage } from "@/api";
+import { i18n } from "@/i18n";
 
 export const useAuthStore = defineStore("auth", {
   state: () => ({
@@ -49,7 +50,7 @@ export const useAuthStore = defineStore("auth", {
         await this.fetchMe();
         return data;
       } catch (e) {
-        const msg = getApiErrorMessage(e, "Не удалось зарегистрироваться");
+        const msg = getApiErrorMessage(e, i18n.global.t("store.auth.registerFail"));
         this.error = msg;
         throw new Error(msg);
       } finally {
@@ -67,7 +68,7 @@ export const useAuthStore = defineStore("auth", {
         await this.fetchMe();
         return data;
       } catch (e) {
-        const msg = getApiErrorMessage(e, "Неверный email или пароль");
+        const msg = getApiErrorMessage(e, i18n.global.t("store.auth.loginFail"));
         this.error = msg;
         throw new Error(msg);
       } finally {
@@ -87,7 +88,7 @@ export const useAuthStore = defineStore("auth", {
         this.user = data.user ?? null;
         return this.user;
       } catch (e) {
-        const msg = getApiErrorMessage(e, "Не удалось загрузить профиль");
+        const msg = getApiErrorMessage(e, i18n.global.t("store.auth.profileFail"));
         this.error = msg;
         throw new Error(msg);
       } finally {
@@ -96,7 +97,7 @@ export const useAuthStore = defineStore("auth", {
     },
 
     async updateProfile(patch) {
-      if (!this.token) throw new Error("Не авторизован");
+      if (!this.token) throw new Error(i18n.global.t("errors.notAuthorized"));
       this.loading = true;
       this.error = null;
       try {
@@ -104,7 +105,7 @@ export const useAuthStore = defineStore("auth", {
         this.user = data.user ?? null;
         return this.user;
       } catch (e) {
-        const msg = getApiErrorMessage(e, "Не удалось обновить профиль");
+        const msg = getApiErrorMessage(e, i18n.global.t("store.auth.updateFail"));
         this.error = msg;
         throw new Error(msg);
       } finally {

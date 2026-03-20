@@ -1,6 +1,9 @@
 <script setup>
 import { ref, computed, watch, onMounted } from "vue";
+import { useI18n } from "vue-i18n";
 import { useInvoicesStore } from "@/stores/invoices";
+
+const { t } = useI18n();
 
 const props = defineProps({
   clients: {
@@ -29,12 +32,12 @@ const lineItems = ref([{ description: "", quantity: 1, unitPrice: 0 }]);
 const localError = ref("");
 const submitting = ref(false);
 
-const statuses = [
-  { value: "draft", label: "Draft" },
-  { value: "sent", label: "Sent" },
-  { value: "paid", label: "Paid" },
-  { value: "overdue", label: "Overdue" },
-];
+const statuses = computed(() => [
+  { value: "draft", label: t("status.draft") },
+  { value: "sent", label: t("status.sent") },
+  { value: "paid", label: t("status.paid") },
+  { value: "overdue", label: t("status.overdue") },
+]);
 
 const previewSubtotal = computed(() =>
   lineItems.value.reduce((s, row) => s + Number(row.quantity || 0) * Number(row.unitPrice || 0), 0)
@@ -61,7 +64,7 @@ async function loadNumber() {
   try {
     invoiceNumber.value = await invoicesStore.fetchNextNumber("INV");
   } catch {
-    localError.value = "Не удалось получить номер инвойса";
+    localError.value = t("invoiceForm.errors.numberFetch");
   }
 }
 
@@ -76,15 +79,15 @@ function removeLine(idx) {
 
 function validate() {
   if (!clientId.value) {
-    localError.value = "Выберите клиента";
+    localError.value = t("invoiceForm.errors.client");
     return false;
   }
   if (!invoiceNumber.value.trim()) {
-    localError.value = "Укажите номер инвойса";
+    localError.value = t("invoiceForm.errors.invoiceNumber");
     return false;
   }
   if (!issueDate.value || !dueDate.value) {
-    localError.value = "Укажите даты";
+    localError.value = t("invoiceForm.errors.dates");
     return false;
   }
   const rows = lineItems.value.map((r) => ({
@@ -93,15 +96,15 @@ function validate() {
     unitPrice: Number(r.unitPrice),
   }));
   if (rows.some((r) => !r.description)) {
-    localError.value = "Заполните описание у каждой позиции";
+    localError.value = t("invoiceForm.errors.lineDesc");
     return false;
   }
   if (rows.some((r) => !Number.isFinite(r.quantity) || r.quantity < 0)) {
-    localError.value = "Количество должно быть неотрицательным числом";
+    localError.value = t("invoiceForm.errors.qty");
     return false;
   }
   if (rows.some((r) => !Number.isFinite(r.unitPrice) || r.unitPrice < 0)) {
-    localError.value = "Цена должна быть неотрицательным числом";
+    localError.value = t("invoiceForm.errors.price");
     return false;
   }
   return true;
@@ -130,7 +133,7 @@ async function submit() {
     const data = await invoicesStore.create(payload);
     emit("submitted", data);
   } catch (e) {
-    localError.value = e.message || "Не удалось создать инвойс";
+    localError.value = e.message || t("invoiceForm.errors.create");
   } finally {
     submitting.value = false;
   }
@@ -157,7 +160,7 @@ onMounted(async () => {
   <form class="inv-form" @submit.prevent="submit">
     <div class="inv-form__grid">
       <div class="field">
-        <label class="field__label" for="client">Клиент</label>
+        <label class="field__label" for="client">{{ t("invoiceForm.client") }}</label>
         <select
           id="client"
           v-model="clientId"
@@ -165,73 +168,73 @@ onMounted(async () => {
           required
           :disabled="loadingClients || !clients.length"
         >
-          <option disabled value="">{{ loadingClients ? "Загрузка…" : "Выберите клиента" }}</option>
+          <option disabled value="">{{ loadingClients ? t("invoiceForm.loading") : t("invoiceForm.selectClient") }}</option>
           <option v-for="c in clients" :key="c.id" :value="c.id">{{ c.name }}</option>
         </select>
       </div>
 
       <div class="field">
-        <label class="field__label" for="number">Номер</label>
+        <label class="field__label" for="number">{{ t("invoiceForm.number") }}</label>
         <div class="field__row">
           <input id="number" v-model="invoiceNumber" class="field__input" type="text" />
-          <button type="button" class="mini-btn" @click="loadNumber">Сгенерировать</button>
+          <button type="button" class="mini-btn" @click="loadNumber">{{ t("invoiceForm.generate") }}</button>
         </div>
       </div>
 
       <div class="field">
-        <label class="field__label" for="issue">Дата выставления</label>
+        <label class="field__label" for="issue">{{ t("invoiceForm.issueDate") }}</label>
         <input id="issue" v-model="issueDate" class="field__input" type="date" />
       </div>
 
       <div class="field">
-        <label class="field__label" for="due">Срок оплаты</label>
+        <label class="field__label" for="due">{{ t("invoiceForm.dueDate") }}</label>
         <input id="due" v-model="dueDate" class="field__input" type="date" />
       </div>
 
       <div class="field">
-        <label class="field__label" for="currency">Валюта</label>
+        <label class="field__label" for="currency">{{ t("invoiceForm.currency") }}</label>
         <input id="currency" v-model="currency" class="field__input" maxlength="8" />
       </div>
 
       <div class="field">
-        <label class="field__label" for="tax">Налог, %</label>
+        <label class="field__label" for="tax">{{ t("invoiceForm.tax") }}</label>
         <input id="tax" v-model.number="taxRate" class="field__input" type="number" min="0" step="0.01" />
       </div>
 
       <div class="field field--wide">
-        <label class="field__label" for="status">Статус</label>
+        <label class="field__label" for="status">{{ t("invoiceForm.status") }}</label>
         <select id="status" v-model="status" class="field__input">
           <option v-for="s in statuses" :key="s.value" :value="s.value">{{ s.label }}</option>
         </select>
       </div>
 
       <div class="field field--wide">
-        <label class="field__label" for="notes">Заметки</label>
+        <label class="field__label" for="notes">{{ t("invoiceForm.notes") }}</label>
         <textarea
           id="notes"
           v-model="notes"
           class="field__textarea"
           rows="3"
-          placeholder="Условия, реквизиты, комментарий"
+          :placeholder="t('invoiceForm.notesPlaceholder')"
         ></textarea>
       </div>
     </div>
 
     <div class="lines">
       <div class="lines__head">
-        <h3 class="lines__title">Позиции</h3>
-        <button type="button" class="mini-btn mini-btn--ghost" @click="addLine">+ Строка</button>
+        <h3 class="lines__title">{{ t("invoiceForm.linesTitle") }}</h3>
+        <button type="button" class="mini-btn mini-btn--ghost" @click="addLine">{{ t("invoiceForm.addLine") }}</button>
       </div>
 
       <div class="lines__table">
         <div class="lines__row lines__row--head">
-          <span>Описание</span>
-          <span>Кол-во</span>
-          <span>Цена</span>
+          <span>{{ t("invoiceForm.colDesc") }}</span>
+          <span>{{ t("invoiceForm.colQty") }}</span>
+          <span>{{ t("invoiceForm.colPrice") }}</span>
           <span />
         </div>
         <div v-for="(row, idx) in lineItems" :key="idx" class="lines__row">
-          <input v-model="row.description" class="field__input" type="text" placeholder="Услуга / товар" />
+          <input v-model="row.description" class="field__input" type="text" :placeholder="t('invoiceForm.linePlaceholder')" />
           <input v-model.number="row.quantity" class="field__input" type="number" min="0" step="0.01" />
           <input v-model.number="row.unitPrice" class="field__input" type="number" min="0" step="0.01" />
           <button type="button" class="icon-btn" :disabled="lineItems.length <= 1" @click="removeLine(idx)">
@@ -243,18 +246,18 @@ onMounted(async () => {
 
     <div class="summary">
       <div class="summary__row">
-        <span>Предпросмотр без учёта округления сервера</span>
+        <span>{{ t("invoiceForm.previewNote") }}</span>
       </div>
       <div class="summary__row">
-        <span>Субтотал</span>
+        <span>{{ t("invoiceForm.subtotal") }}</span>
         <strong>{{ previewSubtotal.toFixed(2) }} {{ currency }}</strong>
       </div>
       <div class="summary__row">
-        <span>Налог</span>
+        <span>{{ t("invoiceForm.taxLine") }}</span>
         <strong>{{ previewTax.toFixed(2) }} {{ currency }}</strong>
       </div>
       <div class="summary__row summary__row--total">
-        <span>Итого</span>
+        <span>{{ t("invoiceForm.total") }}</span>
         <strong>{{ previewTotal.toFixed(2) }} {{ currency }}</strong>
       </div>
     </div>
@@ -263,7 +266,7 @@ onMounted(async () => {
 
     <div class="actions">
       <button class="primary" type="submit" :disabled="submitting">
-        {{ submitting ? "Создание…" : "Создать инвойс" }}
+        {{ submitting ? t("invoiceForm.submitting") : t("invoiceForm.submit") }}
       </button>
     </div>
   </form>

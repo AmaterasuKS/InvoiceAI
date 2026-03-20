@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import ru from "@/i18n/locales/ru.json";
+import en from "@/i18n/locales/en.json";
+
+function pdfCopy(locale) {
+  return (locale === "en" ? en : ru).pdfPreview;
+}
 
 /**
  * Превью PDF в «листе» с 3D-flip при появлении.
@@ -9,8 +15,11 @@ import { motion, useReducedMotion } from "framer-motion";
  * @param {boolean} [props.loading]
  * @param {string} [props.title]
  * @param {Blob | null} [props.blob] — если передан, внутри создаётся object URL (с revoke на unmount)
+ * @param {string} [props.locale] — "ru" | "en"
  */
-export default function PDFPreview({ src = null, loading = false, title = "Предпросмотр инвойса", blob = null }) {
+export default function PDFPreview({ src = null, loading = false, title, blob = null, locale = "ru" }) {
+  const copy = useMemo(() => pdfCopy(locale), [locale]);
+  const displayTitle = title ?? copy.defaultTitle;
   const reduceMotion = useReducedMotion();
   const [internalUrl, setInternalUrl] = useState(null);
 
@@ -59,11 +68,11 @@ export default function PDFPreview({ src = null, loading = false, title = "Пр�
               {loading && (
                 <div style={styles.state}>
                   <div style={styles.spinner} aria-hidden />
-                  <p style={styles.stateText}>Загрузка PDF…</p>
+                  <p style={styles.stateText}>{copy.loading}</p>
                 </div>
               )}
               {!loading && effectiveSrc && (
-                <iframe title={title} src={effectiveSrc} style={styles.iframe} />
+                <iframe title={displayTitle} src={effectiveSrc} style={styles.iframe} />
               )}
               {!loading && !effectiveSrc && (
                 <div style={styles.state}>
@@ -84,8 +93,8 @@ export default function PDFPreview({ src = null, loading = false, title = "Пр�
                       </defs>
                     </svg>
                   </div>
-                  <p style={styles.stateText}>Нет PDF для предпросмотра</p>
-                  <p style={styles.stateHint}>Передайте src или blob с файлом</p>
+                  <p style={styles.stateText}>{copy.empty}</p>
+                  <p style={styles.stateHint}>{copy.hint}</p>
                 </div>
               )}
             </div>

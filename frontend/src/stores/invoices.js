@@ -1,11 +1,12 @@
 import { defineStore } from "pinia";
 import { useAuthStore } from "@/stores/auth";
 import { api, getApiErrorMessage } from "@/api";
+import { i18n } from "@/i18n";
 
 function ensureAuth() {
   const auth = useAuthStore();
   if (!auth.token) {
-    throw new Error("Требуется авторизация");
+    throw new Error(i18n.global.t("errors.authRequired"));
   }
 }
 
@@ -29,7 +30,7 @@ export const useInvoicesStore = defineStore("invoices", {
         const { data } = await api.get("invoices/next-number", { params: { prefix } });
         return data.invoiceNumber;
       } catch (e) {
-        const msg = getApiErrorMessage(e, "Не удалось получить номер");
+        const msg = getApiErrorMessage(e, i18n.global.t("store.invoices.numberFail"));
         this.error = msg;
         throw new Error(msg);
       } finally {
@@ -47,7 +48,7 @@ export const useInvoicesStore = defineStore("invoices", {
         this.total = data.total ?? 0;
         return data;
       } catch (e) {
-        const msg = getApiErrorMessage(e, "Не удалось загрузить инвойсы");
+        const msg = getApiErrorMessage(e, i18n.global.t("store.invoices.listFail"));
         this.error = msg;
         throw new Error(msg);
       } finally {
@@ -65,7 +66,7 @@ export const useInvoicesStore = defineStore("invoices", {
         this.currentClient = data.client ?? null;
         return data;
       } catch (e) {
-        const msg = getApiErrorMessage(e, "Инвойс не найден");
+        const msg = getApiErrorMessage(e, i18n.global.t("store.invoices.notFound"));
         this.error = msg;
         throw new Error(msg);
       } finally {
@@ -87,7 +88,7 @@ export const useInvoicesStore = defineStore("invoices", {
         }
         return data;
       } catch (e) {
-        const msg = getApiErrorMessage(e, "Не удалось создать инвойс");
+        const msg = getApiErrorMessage(e, i18n.global.t("store.invoices.createFail"));
         this.error = msg;
         throw new Error(msg);
       } finally {
@@ -109,7 +110,7 @@ export const useInvoicesStore = defineStore("invoices", {
         }
         return data;
       } catch (e) {
-        const msg = getApiErrorMessage(e, "Не удалось обновить инвойс");
+        const msg = getApiErrorMessage(e, i18n.global.t("store.invoices.updateFail"));
         this.error = msg;
         throw new Error(msg);
       } finally {
@@ -131,7 +132,7 @@ export const useInvoicesStore = defineStore("invoices", {
         }
         return true;
       } catch (e) {
-        const msg = getApiErrorMessage(e, "Не удалось удалить инвойс");
+        const msg = getApiErrorMessage(e, i18n.global.t("store.invoices.deleteFail"));
         this.error = msg;
         throw new Error(msg);
       } finally {

@@ -1,6 +1,8 @@
 <script setup>
+import { useI18n } from "vue-i18n";
 import { useToastStore } from "@/stores/toast";
 
+const { t } = useI18n();
 const toast = useToastStore();
 </script>
 
@@ -9,16 +11,16 @@ const toast = useToastStore();
     <div class="toast-stack" aria-live="polite" aria-relevant="additions">
       <TransitionGroup name="toast">
         <div
-          v-for="t in toast.items"
-          :key="t.id"
+          v-for="item in toast.items"
+          :key="item.id"
           class="toast"
-          :class="`toast--${t.type}`"
+          :class="`toast--${item.type}`"
           role="status"
         >
-          <button type="button" class="toast__close" aria-label="Закрыть" @click="toast.dismiss(t.id)">
+          <button type="button" class="toast__close" :aria-label="t('toast.close')" @click="toast.dismiss(item.id)">
             ×
           </button>
-          <p class="toast__text">{{ t.message }}</p>
+          <p class="toast__text">{{ item.message }}</p>
         </div>
       </TransitionGroup>
     </div>

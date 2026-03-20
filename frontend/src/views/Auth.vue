@@ -1,10 +1,13 @@
 <script setup>
 import { ref, watch, nextTick, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import gsap from "gsap";
 import { useAuthStore } from "@/stores/auth";
 import { useToastStore } from "@/stores/toast";
+import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
 
+const { t } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
@@ -35,15 +38,15 @@ watch(mode, async () => {
 
 function validate() {
   if (!email.value.trim()) {
-    localError.value = "Введите email";
+    localError.value = t("auth.errors.emailRequired");
     return false;
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value.trim())) {
-    localError.value = "Некорректный email";
+    localError.value = t("auth.errors.emailInvalid");
     return false;
   }
   if (!password.value || password.value.length < 8) {
-    localError.value = "Пароль не короче 8 символов";
+    localError.value = t("auth.errors.passwordShort");
     return false;
   }
   return true;
@@ -59,19 +62,19 @@ async function onSubmit() {
         email: email.value.trim(),
         password: password.value,
       });
-      toast.success("С возвращением!");
+      toast.success(t("auth.toastWelcomeBack"));
     } else {
       await auth.register({
         email: email.value.trim(),
         password: password.value,
         companyName: companyName.value.trim() || undefined,
       });
-      toast.success("Аккаунт создан — добро пожаловать!");
+      toast.success(t("auth.toastCreated"));
     }
     const redirect = typeof route.query.redirect === "string" ? route.query.redirect : "/";
     await router.replace(redirect);
   } catch (e) {
-    localError.value = e.message || "Ошибка авторизации";
+    localError.value = e.message || t("auth.errors.authFailed");
   }
 }
 
@@ -108,6 +111,9 @@ onMounted(async () => {
 
 <template>
   <div ref="rootRef" class="auth">
+    <div class="auth__lang" aria-hidden="false">
+      <LanguageSwitcher />
+    </div>
     <div class="auth__bg" aria-hidden="true">
       <div class="auth__orb auth__orb--1" />
       <div class="auth__orb auth__orb--2" />
@@ -116,16 +122,15 @@ onMounted(async () => {
 
     <div class="auth__layout">
       <section class="auth__hero auth-reveal">
-        <div class="auth__badge">InvoiceAI</div>
-        <h1 class="auth__headline">Smart Invoice Generator</h1>
+        <div class="auth__badge">{{ t("auth.badge") }}</div>
+        <h1 class="auth__headline">{{ t("auth.headline") }}</h1>
         <p class="auth__lead">
-          Выставляйте счета, следите за оплатами и получайте финансовую аналитику — с AI‑ассистентом на базе ваших
-          реальных данных.
+          {{ t("auth.lead") }}
         </p>
         <ul class="auth__bullets">
-          <li>PDF и email одним кликом</li>
-          <li>Дашборд и cash flow подсказки</li>
-          <li>Безопасный JWT‑доступ</li>
+          <li>{{ t("auth.bullet1") }}</li>
+          <li>{{ t("auth.bullet2") }}</li>
+          <li>{{ t("auth.bullet3") }}</li>
         </ul>
       </section>
 
@@ -140,7 +145,7 @@ onMounted(async () => {
               :class="{ 'auth__tab--active': mode === 'login' }"
               @click="setMode('login')"
             >
-              Вход
+              {{ t("auth.login") }}
             </button>
             <button
               type="button"
@@ -150,13 +155,13 @@ onMounted(async () => {
               :class="{ 'auth__tab--active': mode === 'register' }"
               @click="setMode('register')"
             >
-              Регистрация
+              {{ t("auth.register") }}
             </button>
           </div>
 
           <form class="auth__form" @submit.prevent="onSubmit">
             <div class="auth-reveal">
-              <label class="auth__label" for="email">Email</label>
+              <label class="auth__label" for="email">{{ t("auth.email") }}</label>
               <input
                 id="email"
                 v-model="email"
@@ -168,26 +173,26 @@ onMounted(async () => {
             </div>
 
             <div v-if="mode === 'register'" class="auth-reveal">
-              <label class="auth__label" for="company">Компания (необязательно)</label>
+              <label class="auth__label" for="company">{{ t("auth.companyOptional") }}</label>
               <input
                 id="company"
                 v-model="companyName"
                 class="auth__input"
                 type="text"
                 autocomplete="organization"
-                placeholder="ООО «Стартап»"
+                :placeholder="t('auth.companyPlaceholder')"
               />
             </div>
 
             <div class="auth-reveal">
-              <label class="auth__label" for="password">Пароль</label>
+              <label class="auth__label" for="password">{{ t("auth.password") }}</label>
               <input
                 id="password"
                 v-model="password"
                 class="auth__input"
                 type="password"
                 autocomplete="current-password"
-                placeholder="Минимум 8 символов"
+                :placeholder="t('auth.passwordPlaceholder')"
               />
             </div>
 
@@ -196,15 +201,21 @@ onMounted(async () => {
             </p>
 
             <button v-ripple class="auth__submit auth-reveal" type="submit" :disabled="auth.loading">
-              <span class="auth__submit-text">{{ auth.loading ? "Отправка…" : mode === "login" ? "Войти" : "Создать аккаунт" }}</span>
+              <span class="auth__submit-text">{{
+                auth.loading
+                  ? t("auth.submitSending")
+                  : mode === "login"
+                    ? t("auth.submitLogin")
+                    : t("auth.submitRegister")
+              }}</span>
               <span class="auth__ripple" aria-hidden="true" />
             </button>
           </form>
 
           <p class="auth__hint auth-reveal">
-            {{ mode === "login" ? "Нет аккаунта?" : "Уже есть аккаунт?" }}
+            {{ mode === "login" ? t("auth.hintNoAccount") : t("auth.hintHasAccount") }}
             <button type="button" class="auth__link" @click="setMode(mode === 'login' ? 'register' : 'login')">
-              {{ mode === "login" ? "Зарегистрируйтесь" : "Войдите" }}
+              {{ mode === "login" ? t("auth.linkRegister") : t("auth.linkLogin") }}
             </button>
           </p>
         </div>
@@ -214,6 +225,13 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.auth__lang {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 5;
+}
+
 .auth {
   --bg: #0a0a0f;
   --card: #12121a;

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted, nextTick } from "vue";
+import { useI18n } from "vue-i18n";
 import gsap from "gsap";
 import {
   Chart as ChartJS,
@@ -31,6 +32,9 @@ ChartJS.register(
 
 const invoicesStore = useInvoicesStore();
 const clientsStore = useClientsStore();
+const { t, locale } = useI18n();
+
+const numberLocale = computed(() => (locale.value === "en" ? "en-US" : "ru-RU"));
 
 const sidebarCollapsed = ref(false);
 const periodMonths = ref(6);
@@ -117,7 +121,7 @@ const chartData = computed(() => ({
   labels: monthlySeries.value.labels,
   datasets: [
     {
-      label: "Оплачено",
+      label: t("dashboard.chartDataset"),
       data: monthlySeries.value.data,
       borderColor: "#6366f1",
       backgroundColor: "rgba(99, 102, 241, 0.18)",
@@ -176,7 +180,7 @@ const topClients = computed(() => {
   return [...totals.entries()]
     .map(([id, total]) => ({
       id,
-      name: clientNameById.value.get(id) || "Клиент",
+      name: clientNameById.value.get(id) || t("dashboard.clientFallback"),
       total,
     }))
     .sort((a, b) => b.total - a.total)
@@ -184,7 +188,7 @@ const topClients = computed(() => {
 });
 
 function formatMoney(n) {
-  return new Intl.NumberFormat("ru-RU", {
+  return new Intl.NumberFormat(numberLocale.value, {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
@@ -244,7 +248,7 @@ async function load() {
       clientsStore.fetchList({ limit: 500 }),
     ]);
   } catch (e) {
-    loadError.value = e.message || "Не удалось загрузить данные";
+    loadError.value = e.message || t("dashboard.loadError");
   } finally {
     loading.value = false;
   }
@@ -274,20 +278,20 @@ onMounted(async () => {
   <div class="dashboard">
     <Sidebar v-model:collapsed="sidebarCollapsed" />
     <div class="dashboard__main">
-      <Navbar title="Дашборд" :notification-count="0" />
+      <Navbar :title="t('dashboard.title')" :notification-count="0" />
       <div ref="contentRef" class="dashboard__content">
         <div class="dashboard__toolbar dash-reveal">
           <div>
-            <h2 class="dashboard__h2">Финансовый обзор</h2>
-            <p class="dashboard__sub">Сводка по вашим инвойсам и оплатам</p>
+            <h2 class="dashboard__h2">{{ t("dashboard.heading") }}</h2>
+            <p class="dashboard__sub">{{ t("dashboard.sub") }}</p>
           </div>
           <div class="dashboard__period">
-            <label class="dashboard__period-label" for="period">Период</label>
+            <label class="dashboard__period-label" for="period">{{ t("dashboard.period") }}</label>
             <select id="period" v-model.number="periodMonths" class="dashboard__select">
-              <option :value="3">3 мес.</option>
-              <option :value="6">6 мес.</option>
-              <option :value="12">12 мес.</option>
-              <option :value="0">Всё время</option>
+              <option :value="3">{{ t("dashboard.period3") }}</option>
+              <option :value="6">{{ t("dashboard.period6") }}</option>
+              <option :value="12">{{ t("dashboard.period12") }}</option>
+              <option :value="0">{{ t("dashboard.periodAll") }}</option>
             </select>
           </div>
         </div>
@@ -312,9 +316,9 @@ onMounted(async () => {
                   />
                 </svg>
               </div>
-              <p class="glass-card__label">Выручка (оплачено)</p>
+              <p class="glass-card__label">{{ t("dashboard.revenue") }}</p>
               <p ref="revenueEl" class="glass-card__value">$0</p>
-              <p class="glass-card__hint">За выбранный период</p>
+              <p class="glass-card__hint">{{ t("dashboard.revenueHint") }}</p>
             </article>
 
             <article class="glass-card dash-reveal">
@@ -328,9 +332,9 @@ onMounted(async () => {
                   />
                 </svg>
               </div>
-              <p class="glass-card__label">К оплате</p>
+              <p class="glass-card__label">{{ t("dashboard.toPay") }}</p>
               <p ref="openEl" class="glass-card__value">$0</p>
-              <p class="glass-card__hint">Draft / Sent / Overdue</p>
+              <p class="glass-card__hint">{{ t("dashboard.toPayHint") }}</p>
             </article>
 
             <article class="glass-card dash-reveal">
@@ -344,9 +348,9 @@ onMounted(async () => {
                   />
                 </svg>
               </div>
-              <p class="glass-card__label">Процент оплаты</p>
+              <p class="glass-card__label">{{ t("dashboard.payRate") }}</p>
               <p ref="rateEl" class="glass-card__value">0%</p>
-              <p class="glass-card__hint">Доля оплаченного в общем объёме</p>
+              <p class="glass-card__hint">{{ t("dashboard.payRateHint") }}</p>
             </article>
 
             <article class="glass-card dash-reveal">
@@ -360,30 +364,30 @@ onMounted(async () => {
                   />
                 </svg>
               </div>
-              <p class="glass-card__label">Фокус на оплате</p>
+              <p class="glass-card__label">{{ t("dashboard.focusPay") }}</p>
               <p ref="unpaidCountEl" class="glass-card__value">0</p>
-              <p class="glass-card__hint">Инвойсы Sent / Overdue за период</p>
+              <p class="glass-card__hint">{{ t("dashboard.focusPayHint") }}</p>
             </article>
           </div>
 
           <section class="glass-panel dash-reveal">
             <div class="glass-panel__head">
               <div>
-                <h3 class="glass-panel__title">Доходы по месяцам</h3>
-                <p class="glass-panel__sub">Плавная анимация линии при обновлении данных</p>
+                <h3 class="glass-panel__title">{{ t("dashboard.chartTitle") }}</h3>
+                <p class="glass-panel__sub">{{ t("dashboard.chartSub") }}</p>
               </div>
             </div>
             <div class="chart-wrap">
               <Line v-if="monthlySeries.labels.length" :data="chartData" :options="chartOptions" />
-              <p v-else class="empty-hint">Недостаточно оплаченных инвойсов для графика</p>
+              <p v-else class="empty-hint">{{ t("dashboard.chartEmpty") }}</p>
             </div>
           </section>
 
           <div class="dashboard__split">
             <section class="glass-panel dash-reveal">
               <div class="glass-panel__head">
-                <h3 class="glass-panel__title">Топ клиенты</h3>
-                <p class="glass-panel__sub">По сумме оплаченных инвойсов</p>
+                <h3 class="glass-panel__title">{{ t("dashboard.topClients") }}</h3>
+                <p class="glass-panel__sub">{{ t("dashboard.topClientsSub") }}</p>
               </div>
               <ul class="list">
                 <li v-for="(row, idx) in topClients" :key="row.id" class="list__row">
@@ -391,23 +395,23 @@ onMounted(async () => {
                   <span class="list__name">{{ row.name }}</span>
                   <span class="list__amount">{{ formatMoney(row.total) }}</span>
                 </li>
-                <li v-if="!topClients.length" class="empty-hint">Пока нет оплат за период</li>
+                <li v-if="!topClients.length" class="empty-hint">{{ t("dashboard.topClientsEmpty") }}</li>
               </ul>
             </section>
 
             <section class="glass-panel dash-reveal">
               <div class="glass-panel__head">
-                <h3 class="glass-panel__title">Неоплаченные</h3>
-                <p class="glass-panel__sub">Sent и Overdue, ближайшие сроки</p>
+                <h3 class="glass-panel__title">{{ t("dashboard.unpaid") }}</h3>
+                <p class="glass-panel__sub">{{ t("dashboard.unpaidSub") }}</p>
               </div>
               <ul class="list">
                 <li v-for="inv in unpaidHighlight" :key="inv.id" class="list__row list__row--invoice">
-                  <span class="badge" :class="`badge--${inv.status}`">{{ inv.status }}</span>
-                  <span class="list__name">{{ clientNameById.get(inv.clientId) || "Клиент" }}</span>
+                  <span class="badge" :class="`badge--${inv.status}`">{{ t(`status.${inv.status}`) }}</span>
+                  <span class="list__name">{{ clientNameById.get(inv.clientId) || t("dashboard.clientFallback") }}</span>
                   <span class="list__muted">{{ inv.dueDate }}</span>
                   <span class="list__amount">{{ formatMoney(inv.total) }}</span>
                 </li>
-                <li v-if="!unpaidHighlight.length" class="empty-hint">Отлично: нет просрочек в выборке</li>
+                <li v-if="!unpaidHighlight.length" class="empty-hint">{{ t("dashboard.unpaidEmpty") }}</li>
               </ul>
             </section>
           </div>

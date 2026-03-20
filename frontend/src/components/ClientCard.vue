@@ -1,5 +1,8 @@
 <script setup>
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+
+const { t, locale } = useI18n();
 
 const props = defineProps({
   client: {
@@ -29,8 +32,10 @@ const initials = computed(() => {
   return n.slice(0, 2).toUpperCase() || "CL";
 });
 
+const numberLocale = computed(() => (locale.value === "en" ? "en-US" : "ru-RU"));
+
 function formatMoney(n) {
-  return new Intl.NumberFormat("ru-RU", {
+  return new Intl.NumberFormat(numberLocale.value, {
     style: "currency",
     currency: "USD",
     maximumFractionDigits: 0,
@@ -52,47 +57,47 @@ function formatMoney(n) {
     <p v-if="client.address" class="card__address">{{ client.address }}</p>
 
     <div class="card__chips">
-      <span v-if="client.notes" class="chip chip--note" :title="client.notes">Есть заметка</span>
+      <span v-if="client.notes" class="chip chip--note" :title="client.notes">{{ t("clientCard.noteChip") }}</span>
     </div>
 
     <div class="card__actions">
       <button type="button" class="btn btn--ghost" @click="emit('toggle-detail')">
-        {{ expanded ? "Скрыть аналитику" : "Аналитика" }}
+        {{ expanded ? t("clientCard.hideAnalytics") : t("clientCard.analytics") }}
       </button>
-      <button type="button" class="btn btn--ghost" @click="emit('edit')">Изменить</button>
-      <button type="button" class="btn btn--danger" @click="emit('delete')">Удалить</button>
+      <button type="button" class="btn btn--ghost" @click="emit('edit')">{{ t("clientCard.edit") }}</button>
+      <button type="button" class="btn btn--danger" @click="emit('delete')">{{ t("clientCard.delete") }}</button>
     </div>
 
     <transition name="fade-slide">
       <div v-if="expanded" class="card__detail">
-        <div v-if="loadingAnalytics" class="detail__loading">Загрузка метрик…</div>
+        <div v-if="loadingAnalytics" class="detail__loading">{{ t("clientCard.loadingMetrics") }}</div>
         <template v-else-if="analytics">
           <div class="detail__grid">
             <div class="metric">
-              <span class="metric__label">Инвойсов</span>
+              <span class="metric__label">{{ t("clientCard.invoices") }}</span>
               <strong class="metric__value">{{ analytics.invoiceCount }}</strong>
             </div>
             <div class="metric">
-              <span class="metric__label">Оплачено</span>
+              <span class="metric__label">{{ t("clientCard.paid") }}</span>
               <strong class="metric__value">{{ formatMoney(analytics.paidTotal) }}</strong>
             </div>
             <div class="metric">
-              <span class="metric__label">Открыто</span>
+              <span class="metric__label">{{ t("clientCard.open") }}</span>
               <strong class="metric__value">{{ formatMoney(analytics.outstandingTotal) }}</strong>
             </div>
             <div class="metric">
-              <span class="metric__label">Просрочка</span>
+              <span class="metric__label">{{ t("clientCard.overdue") }}</span>
               <strong class="metric__value metric__value--danger">{{ formatMoney(analytics.overdueTotal) }}</strong>
             </div>
           </div>
           <div class="detail__statuses">
-            <span class="pill">draft: {{ analytics.byStatus?.draft ?? 0 }}</span>
-            <span class="pill">sent: {{ analytics.byStatus?.sent ?? 0 }}</span>
-            <span class="pill">paid: {{ analytics.byStatus?.paid ?? 0 }}</span>
-            <span class="pill pill--alert">overdue: {{ analytics.byStatus?.overdue ?? 0 }}</span>
+            <span class="pill">{{ t("status.draft") }}: {{ analytics.byStatus?.draft ?? 0 }}</span>
+            <span class="pill">{{ t("status.sent") }}: {{ analytics.byStatus?.sent ?? 0 }}</span>
+            <span class="pill">{{ t("status.paid") }}: {{ analytics.byStatus?.paid ?? 0 }}</span>
+            <span class="pill pill--alert">{{ t("status.overdue") }}: {{ analytics.byStatus?.overdue ?? 0 }}</span>
           </div>
         </template>
-        <p v-else class="detail__empty">Нет данных аналитики</p>
+        <p v-else class="detail__empty">{{ t("clientCard.noAnalytics") }}</p>
       </div>
     </transition>
   </article>

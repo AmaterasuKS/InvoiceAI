@@ -1,8 +1,12 @@
 <script setup>
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { useAuthStore } from "@/stores/auth";
 import { useToastStore } from "@/stores/toast";
+import LanguageSwitcher from "@/components/LanguageSwitcher.vue";
+
+const { t } = useI18n();
 
 const props = defineProps({
   title: {
@@ -29,8 +33,8 @@ const menuOpen = ref(false);
 
 const displayName = computed(() => {
   const u = auth.user;
-  if (!u) return "Гость";
-  return u.companyName?.trim() || u.email?.split("@")[0] || "Аккаунт";
+  if (!u) return t("navbar.guest");
+  return u.companyName?.trim() || u.email?.split("@")[0] || t("navbar.account");
 });
 
 const initials = computed(() => {
@@ -47,7 +51,7 @@ const subtitle = computed(() => auth.user?.email || "");
 async function logout() {
   menuOpen.value = false;
   auth.logout();
-  toast.info("Вы вышли из аккаунта");
+  toast.info(t("navbar.logoutToast"));
   await router.push({ name: "auth" });
 }
 
@@ -68,7 +72,7 @@ function onNotifications() {
           v-if="showMenuToggle"
           type="button"
           class="navbar__icon-btn navbar__menu"
-          aria-label="Меню"
+          :aria-label="t('navbar.menu')"
           @click="emit('menu-click')"
         >
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
@@ -77,12 +81,13 @@ function onNotifications() {
         </button>
         <div class="navbar__titles">
           <p v-if="title" class="navbar__title">{{ title }}</p>
-          <p v-else class="navbar__title navbar__title--muted">Панель управления</p>
+          <p v-else class="navbar__title navbar__title--muted">{{ t("navbar.defaultTitle") }}</p>
         </div>
       </div>
 
       <div class="navbar__right">
-        <button type="button" class="navbar__notify" aria-label="Уведомления" @click="onNotifications">
+        <LanguageSwitcher class="navbar__lang" />
+        <button type="button" class="navbar__notify" :aria-label="t('navbar.notifications')" @click="onNotifications">
           <span class="navbar__notify-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path
@@ -112,7 +117,9 @@ function onNotifications() {
 
           <transition name="fade-scale">
             <div v-if="menuOpen" class="navbar__dropdown" role="menu">
-              <button type="button" class="navbar__dropdown-item" role="menuitem" @click="logout">Выйти</button>
+              <button type="button" class="navbar__dropdown-item" role="menuitem" @click="logout">
+                {{ t("navbar.logout") }}
+              </button>
             </div>
           </transition>
         </div>
@@ -182,6 +189,10 @@ function onNotifications() {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
+}
+
+.navbar__lang {
   flex-shrink: 0;
 }
 

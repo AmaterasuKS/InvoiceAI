@@ -1,11 +1,12 @@
 import { defineStore } from "pinia";
 import { useAuthStore } from "@/stores/auth";
 import { api, getApiErrorMessage } from "@/api";
+import { i18n } from "@/i18n";
 
 function ensureAuth() {
   const auth = useAuthStore();
   if (!auth.token) {
-    throw new Error("Требуется авторизация");
+    throw new Error(i18n.global.t("errors.authRequired"));
   }
 }
 
@@ -30,7 +31,7 @@ export const useClientsStore = defineStore("clients", {
         this.total = data.total ?? 0;
         return data;
       } catch (e) {
-        const msg = getApiErrorMessage(e, "Не удалось загрузить клиентов");
+        const msg = getApiErrorMessage(e, i18n.global.t("store.clients.listFail"));
         this.error = msg;
         throw new Error(msg);
       } finally {
@@ -48,7 +49,7 @@ export const useClientsStore = defineStore("clients", {
         this.currentAnalytics = data.analytics ?? null;
         return data;
       } catch (e) {
-        const msg = getApiErrorMessage(e, "Клиент не найден");
+        const msg = getApiErrorMessage(e, i18n.global.t("store.clients.notFound"));
         this.error = msg;
         throw new Error(msg);
       } finally {
@@ -69,7 +70,7 @@ export const useClientsStore = defineStore("clients", {
         }
         return client;
       } catch (e) {
-        const msg = getApiErrorMessage(e, "Не удалось создать клиента");
+        const msg = getApiErrorMessage(e, i18n.global.t("store.clients.createFail"));
         this.error = msg;
         throw new Error(msg);
       } finally {
@@ -91,7 +92,7 @@ export const useClientsStore = defineStore("clients", {
         }
         return client;
       } catch (e) {
-        const msg = getApiErrorMessage(e, "Не удалось обновить клиента");
+        const msg = getApiErrorMessage(e, i18n.global.t("store.clients.updateFail"));
         this.error = msg;
         throw new Error(msg);
       } finally {
@@ -113,7 +114,7 @@ export const useClientsStore = defineStore("clients", {
         }
         return true;
       } catch (e) {
-        const msg = getApiErrorMessage(e, "Не удалось удалить клиента");
+        const msg = getApiErrorMessage(e, i18n.global.t("store.clients.deleteFail"));
         this.error = msg;
         throw new Error(msg);
       } finally {

@@ -1,12 +1,21 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { api, getApiErrorMessage } from "@/api";
+import { i18n } from "@/i18n";
+import ru from "@/i18n/locales/ru.json";
+import en from "@/i18n/locales/en.json";
+
+function aiCopy(locale) {
+  return (locale === "en" ? en : ru).aiChat;
+}
 
 /**
  * Плавающий AI-чат: Groq через `/api/ai/chat`, ответ ассистента с эффектом печати.
  */
 export default function AIChat(props = {}) {
-  const { title = "InvoiceAI Assistant" } = props;
+  const { locale: localeProp = "ru" } = props;
+  const copy = useMemo(() => aiCopy(localeProp), [localeProp]);
+  const title = props.title ?? copy.title;
   const reduceMotion = useReducedMotion();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState("");
@@ -100,7 +109,7 @@ export default function AIChat(props = {}) {
       startTyping(assistantId, reply);
     } catch (e) {
       const assistantId = crypto.randomUUID();
-      const fallback = getApiErrorMessage(e, "Не удалось получить ответ AI");
+      const fallback = getApiErrorMessage(e, i18n.global.t("aiChat.aiError"));
       setMessages((m) => [
         ...m,
         {
@@ -145,7 +154,7 @@ export default function AIChat(props = {}) {
     <div style={styles.root}>
       <motion.button
         type="button"
-        aria-label={open ? "Закрыть чат" : "Открыть AI чат"}
+        aria-label={open ? copy.close : copy.open}
         style={styles.fab}
         onClick={() => setOpen((v) => !v)}
         whileHover={reduceMotion ? {} : { scale: 1.05, y: -2 }}
@@ -182,18 +191,16 @@ export default function AIChat(props = {}) {
               <div style={styles.panelHeader}>
                 <div>
                   <p style={styles.panelTitle}>{title}</p>
-                  <p style={styles.panelSub}>Контекст из ваших инвойсов и клиентов</p>
+                  <p style={styles.panelSub}>{copy.subtitle}</p>
                 </div>
-                <button type="button" style={styles.iconBtn} aria-label="Закрыть" onClick={() => setOpen(false)}>
+                <button type="button" style={styles.iconBtn} aria-label={copy.closePanel} onClick={() => setOpen(false)}>
                   ×
                 </button>
               </div>
 
               <div ref={listRef} style={styles.messages}>
                 {messages.length === 0 && (
-                  <p style={styles.hint}>
-                    Спросите о задолженностях, напоминаниях клиентам или cash flow — ответ опирается на ваши данные.
-                  </p>
+                  <p style={styles.hint}>{copy.hint}</p>
                 )}
                 {messages.map((m) => (
                   <div
@@ -224,14 +231,14 @@ export default function AIChat(props = {}) {
                 <textarea
                   style={styles.textarea}
                   rows={2}
-                  placeholder="Сообщение… (Enter — отправить, Shift+Enter — новая строка)"
+                  placeholder={copy.placeholder}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={onKeyDown}
                   disabled={busy}
                 />
                 <button type="button" style={styles.sendBtn} disabled={busy || !input.trim()} onClick={send}>
-                  {busy ? "…" : "Отправить"}
+                  {busy ? copy.busy : copy.send}
                 </button>
               </div>
             </div>

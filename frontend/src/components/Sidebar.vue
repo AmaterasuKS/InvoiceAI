@@ -1,28 +1,30 @@
 <script setup>
 import { computed } from "vue";
 import { RouterLink, useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
 
 const collapsed = defineModel("collapsed", { type: Boolean, default: false });
 
 const route = useRoute();
+const { t } = useI18n();
 
-const items = [
+const items = computed(() => [
   {
     to: "/",
-    label: "Дашборд",
+    label: t("nav.dashboard"),
     icon: "dashboard",
   },
   {
     to: "/invoices",
-    label: "Инвойсы",
+    label: t("nav.invoices"),
     icon: "invoices",
   },
   {
     to: "/clients",
-    label: "Клиенты",
+    label: t("nav.clients"),
     icon: "clients",
   },
-];
+]);
 
 const isActive = (path) => {
   if (path === "/") return route.path === "/";
@@ -37,7 +39,7 @@ function toggle() {
 </script>
 
 <template>
-  <aside class="sidebar" :class="widthClass" aria-label="Основная навигация">
+  <aside class="sidebar" :class="widthClass" :aria-label="t('sidebar.navAria')">
     <div class="sidebar__glass">
       <div class="sidebar__brand">
         <div class="sidebar__logo" aria-hidden="true">
@@ -46,7 +48,7 @@ function toggle() {
         <transition name="fade-slide">
           <div v-if="!collapsed" class="sidebar__brand-text">
             <span class="sidebar__title">InvoiceAI</span>
-            <span class="sidebar__subtitle">Smart Invoices</span>
+            <span class="sidebar__subtitle">{{ t("sidebar.brandSub") }}</span>
           </div>
         </transition>
       </div>
@@ -94,7 +96,12 @@ function toggle() {
       </nav>
 
       <div class="sidebar__footer">
-        <button type="button" class="sidebar__collapse" :title="collapsed ? 'Развернуть' : 'Свернуть'" @click="toggle">
+        <button
+          type="button"
+          class="sidebar__collapse"
+          :title="collapsed ? t('sidebar.expand') : t('sidebar.collapse')"
+          @click="toggle"
+        >
           <span class="sidebar__icon sidebar__icon--btn" aria-hidden="true">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
               <path
@@ -106,7 +113,7 @@ function toggle() {
             </svg>
           </span>
           <transition name="fade-slide">
-            <span v-if="!collapsed" class="sidebar__label">Свернуть</span>
+            <span v-if="!collapsed" class="sidebar__label">{{ t("sidebar.collapse") }}</span>
           </transition>
         </button>
       </div>

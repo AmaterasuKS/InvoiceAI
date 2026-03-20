@@ -1,11 +1,14 @@
 <script setup>
 import { ref, computed, watch, onMounted } from "vue";
 import { RouterLink } from "vue-router";
+import { useI18n } from "vue-i18n";
 import Navbar from "@/components/Navbar.vue";
 import Sidebar from "@/components/Sidebar.vue";
 import InvoiceTable from "@/components/InvoiceTable.vue";
 import { useInvoicesStore } from "@/stores/invoices";
 import { useClientsStore } from "@/stores/clients";
+
+const { t } = useI18n();
 
 const sidebarCollapsed = ref(false);
 const page = ref(1);
@@ -67,25 +70,25 @@ onMounted(async () => {
   <div class="page">
     <Sidebar v-model:collapsed="sidebarCollapsed" />
     <div class="page__main">
-      <Navbar title="Инвойсы" />
+      <Navbar :title="t('invoices.title')" />
       <div class="page__content">
         <div class="head glass-panel">
           <div>
-            <h1 class="title">Инвойсы</h1>
-            <p class="sub">Список, фильтры, сортировка и пагинация</p>
+            <h1 class="title">{{ t("invoices.title") }}</h1>
+            <p class="sub">{{ t("invoices.sub") }}</p>
           </div>
           <div class="head__actions">
             <div class="filter">
-              <label class="filter__label" for="status">Статус</label>
+              <label class="filter__label" for="status">{{ t("invoices.statusLabel") }}</label>
               <select id="status" v-model="statusFilter" class="filter__select">
-                <option value="">Все</option>
-                <option value="draft">Draft</option>
-                <option value="sent">Sent</option>
-                <option value="paid">Paid</option>
-                <option value="overdue">Overdue</option>
+                <option value="">{{ t("invoices.statusAll") }}</option>
+                <option value="draft">{{ t("status.draft") }}</option>
+                <option value="sent">{{ t("status.sent") }}</option>
+                <option value="paid">{{ t("status.paid") }}</option>
+                <option value="overdue">{{ t("status.overdue") }}</option>
               </select>
             </div>
-            <RouterLink class="cta" to="/invoices/new">+ Новый инвойс</RouterLink>
+            <RouterLink class="cta" to="/invoices/new">{{ t("invoices.new") }}</RouterLink>
           </div>
         </div>
 

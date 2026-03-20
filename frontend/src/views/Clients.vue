@@ -1,10 +1,13 @@
 <script setup>
 import { ref, watch, onMounted, nextTick } from "vue";
+import { useI18n } from "vue-i18n";
 import gsap from "gsap";
 import Navbar from "@/components/Navbar.vue";
 import Sidebar from "@/components/Sidebar.vue";
 import ClientCard from "@/components/ClientCard.vue";
 import { useClientsStore } from "@/stores/clients";
+
+const { t } = useI18n();
 
 const sidebarCollapsed = ref(false);
 const search = ref("");
@@ -121,7 +124,7 @@ function closeModal() {
 async function saveClient() {
   formError.value = "";
   if (!form.value.name.trim()) {
-    formError.value = "Укажите имя или название";
+    formError.value = t("clients.errors.name");
     return;
   }
   saving.value = true;
@@ -141,14 +144,14 @@ async function saveClient() {
     closeModal();
     await loadClients();
   } catch (e) {
-    formError.value = e.message || "Не удалось сохранить";
+    formError.value = e.message || t("clients.errors.save");
   } finally {
     saving.value = false;
   }
 }
 
 async function removeClient(client) {
-  if (!window.confirm(`Удалить клиента «${client.name}»?`)) return;
+  if (!window.confirm(t("clients.deleteConfirm", { name: client.name }))) return;
   try {
     await clientsStore.remove(client.id);
     if (expandedId.value === client.id) expandedId.value = null;
@@ -157,7 +160,7 @@ async function removeClient(client) {
     analyticsById.value = next;
     await loadClients();
   } catch (e) {
-    alert(e.message || "Не удалось удалить (возможны связанные инвойсы)");
+    alert(e.message || t("clients.deleteError"));
   }
 }
 
@@ -170,24 +173,24 @@ onMounted(() => {
   <div class="page">
     <Sidebar v-model:collapsed="sidebarCollapsed" />
     <div class="page__main">
-      <Navbar title="Клиенты" />
+      <Navbar :title="t('clients.title')" />
       <div class="page__content">
         <div class="head glass-panel">
           <div>
-            <h1 class="title">База клиентов</h1>
-            <p class="sub">Карточки, поиск, аналитика по инвойсам</p>
+            <h1 class="title">{{ t("clients.heading") }}</h1>
+            <p class="sub">{{ t("clients.sub") }}</p>
           </div>
-          <button type="button" class="cta" @click="openCreate">+ Новый клиент</button>
+          <button type="button" class="cta" @click="openCreate">{{ t("clients.new") }}</button>
         </div>
 
         <div class="toolbar glass-panel">
-          <label class="sr-only" for="search">Поиск</label>
+          <label class="sr-only" for="search">{{ t("clients.search") }}</label>
           <input
             id="search"
             v-model="search"
             class="search"
             type="search"
-            placeholder="Поиск по имени, email, телефону…"
+            :placeholder="t('clients.searchPlaceholder')"
             autocomplete="off"
           />
         </div>
@@ -210,7 +213,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <p v-if="!clientsStore.loading && !clientsStore.items.length" class="empty">Клиенты не найдены</p>
+        <p v-if="!clientsStore.loading && !clientsStore.items.length" class="empty">{{ t("clients.empty") }}</p>
       </div>
     </div>
 
@@ -220,36 +223,36 @@ onMounted(() => {
           <div class="modal__backdrop" @click="closeModal" />
           <div class="modal__panel glass-panel">
             <div class="modal__head">
-              <h2 class="modal__title">{{ modalMode === "create" ? "Новый клиент" : "Редактирование" }}</h2>
-              <button type="button" class="modal__close" aria-label="Закрыть" @click="closeModal">×</button>
+              <h2 class="modal__title">{{ modalMode === "create" ? t("clients.modalCreate") : t("clients.modalEdit") }}</h2>
+              <button type="button" class="modal__close" :aria-label="t('toast.close')" @click="closeModal">×</button>
             </div>
             <div class="modal__body">
               <div class="field">
-                <label class="field__label" for="c-name">Имя / компания *</label>
+                <label class="field__label" for="c-name">{{ t("clients.fieldName") }}</label>
                 <input id="c-name" v-model="form.name" class="field__input" type="text" />
               </div>
               <div class="field">
-                <label class="field__label" for="c-email">Email</label>
+                <label class="field__label" for="c-email">{{ t("clients.fieldEmail") }}</label>
                 <input id="c-email" v-model="form.email" class="field__input" type="email" />
               </div>
               <div class="field">
-                <label class="field__label" for="c-phone">Телефон</label>
+                <label class="field__label" for="c-phone">{{ t("clients.fieldPhone") }}</label>
                 <input id="c-phone" v-model="form.phone" class="field__input" type="text" />
               </div>
               <div class="field">
-                <label class="field__label" for="c-address">Адрес</label>
+                <label class="field__label" for="c-address">{{ t("clients.fieldAddress") }}</label>
                 <textarea id="c-address" v-model="form.address" class="field__textarea" rows="2"></textarea>
               </div>
               <div class="field">
-                <label class="field__label" for="c-notes">Заметки</label>
+                <label class="field__label" for="c-notes">{{ t("clients.fieldNotes") }}</label>
                 <textarea id="c-notes" v-model="form.notes" class="field__textarea" rows="3"></textarea>
               </div>
               <p v-if="formError" class="form-error" role="alert">{{ formError }}</p>
             </div>
             <div class="modal__foot">
-              <button type="button" class="btn ghost" @click="closeModal">Отмена</button>
+              <button type="button" class="btn ghost" @click="closeModal">{{ t("clients.cancel") }}</button>
               <button type="button" class="btn primary" :disabled="saving" @click="saveClient">
-                {{ saving ? "Сохранение…" : "Сохранить" }}
+                {{ saving ? t("clients.saving") : t("clients.save") }}
               </button>
             </div>
           </div>

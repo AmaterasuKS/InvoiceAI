@@ -1,6 +1,7 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref, watch } from "vue";
 import { RouterView, useRoute } from "vue-router";
+import { useI18n } from "vue-i18n";
 import { createRoot } from "react-dom/client";
 import { createElement } from "react";
 import ToastStack from "@/components/ToastStack.vue";
@@ -9,13 +10,14 @@ import { useAuthStore } from "@/stores/auth";
 
 const route = useRoute();
 const auth = useAuthStore();
+const { locale } = useI18n();
 const aiMount = ref(null);
 let reactRoot = null;
 
 function renderAiChat() {
   if (!reactRoot) return;
   if (auth.token) {
-    reactRoot.render(createElement(AIChat));
+    reactRoot.render(createElement(AIChat, { locale: locale.value }));
   } else {
     reactRoot.render(null);
   }
@@ -34,7 +36,7 @@ onMounted(() => {
 });
 
 watch(
-  () => auth.token,
+  () => [auth.token, locale.value],
   () => {
     renderAiChat();
   }

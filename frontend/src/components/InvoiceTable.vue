@@ -1,5 +1,8 @@
 <script setup>
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
+
+const { t, locale } = useI18n();
 
 const props = defineProps({
   items: {
@@ -36,20 +39,22 @@ const emit = defineEmits(["update:sort", "update:page", "delete"]);
 
 const totalPages = computed(() => Math.max(1, Math.ceil(props.total / props.pageSize)));
 
-const sortOptions = [
-  { value: "issue_date_desc", label: "Дата ↓" },
-  { value: "issue_date_asc", label: "Дата ↑" },
-  { value: "total_desc", label: "Сумма ↓" },
-  { value: "total_asc", label: "Сумма ↑" },
-  { value: "created_at_desc", label: "Создан ↓" },
-];
+const sortOptions = computed(() => [
+  { value: "issue_date_desc", label: t("invoiceTable.sortDateDesc") },
+  { value: "issue_date_asc", label: t("invoiceTable.sortDateAsc") },
+  { value: "total_desc", label: t("invoiceTable.sortTotalDesc") },
+  { value: "total_asc", label: t("invoiceTable.sortTotalAsc") },
+  { value: "created_at_desc", label: t("invoiceTable.sortCreatedDesc") },
+]);
 
 function clientLabel(id) {
   return props.clientNames[id] || "—";
 }
 
+const numberLocale = computed(() => (locale.value === "en" ? "en-US" : "ru-RU"));
+
 function formatMoney(n, currency = "USD") {
-  return new Intl.NumberFormat("ru-RU", {
+  return new Intl.NumberFormat(numberLocale.value, {
     style: "currency",
     currency: currency || "USD",
     maximumFractionDigits: 0,
@@ -66,7 +71,7 @@ function setPage(p) {
 }
 
 function onDelete(inv) {
-  if (!window.confirm(`Удалить инвойс ${inv.invoiceNumber}?`)) return;
+  if (!window.confirm(t("invoiceTable.deleteConfirm", { n: inv.invoiceNumber }))) return;
   emit("delete", inv);
 }
 </script>
@@ -75,7 +80,7 @@ function onDelete(inv) {
   <div class="inv-table">
     <div class="inv-table__toolbar">
       <div class="inv-table__sort">
-        <label class="inv-table__label" for="sort">Сортировка</label>
+        <label class="inv-table__label" for="sort">{{ t("invoiceTable.sort") }}</label>
         <select id="sort" class="inv-table__select" :value="sort" @change="setSort($event.target.value)">
           <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">
             {{ opt.label }}
@@ -83,7 +88,7 @@ function onDelete(inv) {
         </select>
       </div>
       <div class="inv-table__meta">
-        <span>Всего: <strong>{{ total }}</strong></span>
+        <span>{{ t("invoiceTable.total") }}: <strong>{{ total }}</strong></span>
       </div>
     </div>
 
@@ -91,21 +96,21 @@ function onDelete(inv) {
       <table class="inv-table__grid">
         <thead>
           <tr>
-            <th>Номер</th>
-            <th>Клиент</th>
-            <th>Дата</th>
-            <th>Срок</th>
-            <th>Статус</th>
-            <th class="inv-table__num">Сумма</th>
+            <th>{{ t("invoiceTable.colNumber") }}</th>
+            <th>{{ t("invoiceTable.colClient") }}</th>
+            <th>{{ t("invoiceTable.colIssue") }}</th>
+            <th>{{ t("invoiceTable.colDue") }}</th>
+            <th>{{ t("invoiceTable.colStatus") }}</th>
+            <th class="inv-table__num">{{ t("invoiceTable.colAmount") }}</th>
             <th />
           </tr>
         </thead>
         <tbody>
           <tr v-if="loading">
-            <td colspan="7" class="inv-table__loading">Загрузка…</td>
+            <td colspan="7" class="inv-table__loading">{{ t("invoiceTable.loading") }}</td>
           </tr>
           <tr v-else-if="!items.length">
-            <td colspan="7" class="inv-table__empty">Инвойсы не найдены</td>
+            <td colspan="7" class="inv-table__empty">{{ t("invoiceTable.empty") }}</td>
           </tr>
           <tr v-for="inv in items" :key="inv.id">
             <td class="inv-table__strong">{{ inv.invoiceNumber }}</td>
@@ -113,11 +118,11 @@ function onDelete(inv) {
             <td>{{ inv.issueDate }}</td>
             <td>{{ inv.dueDate }}</td>
             <td>
-              <span class="badge" :class="`badge--${inv.status}`">{{ inv.status }}</span>
+              <span class="badge" :class="`badge--${inv.status}`">{{ t(`status.${inv.status}`) }}</span>
             </td>
             <td class="inv-table__num">{{ formatMoney(inv.total, inv.currency) }}</td>
             <td class="inv-table__actions">
-              <button type="button" class="ghost-btn" @click="onDelete(inv)">Удалить</button>
+              <button type="button" class="ghost-btn" @click="onDelete(inv)">{{ t("invoiceTable.delete") }}</button>
             </td>
           </tr>
         </tbody>
@@ -125,10 +130,12 @@ function onDelete(inv) {
     </div>
 
     <div class="inv-table__pager">
-      <button type="button" class="pager-btn" :disabled="page <= 1" @click="setPage(page - 1)">Назад</button>
-      <span class="pager-info">Стр. {{ page }} / {{ totalPages }}</span>
+      <button type="button" class="pager-btn" :disabled="page <= 1" @click="setPage(page - 1)">
+        {{ t("invoiceTable.prev") }}
+      </button>
+      <span class="pager-info">{{ t("invoiceTable.page", { current: page, total: totalPages }) }}</span>
       <button type="button" class="pager-btn" :disabled="page >= totalPages" @click="setPage(page + 1)">
-        Вперёд
+        {{ t("invoiceTable.next") }}
       </button>
     </div>
   </div>

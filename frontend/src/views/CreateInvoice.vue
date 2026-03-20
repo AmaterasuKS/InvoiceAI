@@ -1,10 +1,13 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRouter, RouterLink } from "vue-router";
+import { useI18n } from "vue-i18n";
 import Navbar from "@/components/Navbar.vue";
 import Sidebar from "@/components/Sidebar.vue";
 import InvoiceForm from "@/components/InvoiceForm.vue";
 import { useClientsStore } from "@/stores/clients";
+
+const { t } = useI18n();
 
 const sidebarCollapsed = ref(false);
 const router = useRouter();
@@ -27,14 +30,14 @@ onMounted(() => {
   <div class="page">
     <Sidebar v-model:collapsed="sidebarCollapsed" />
     <div class="page__main">
-      <Navbar title="Новый инвойс" />
+      <Navbar :title="t('createInvoice.title')" />
       <div class="page__content">
         <div class="head glass-panel">
           <div>
-            <h1 class="title">Создание инвойса</h1>
-            <p class="sub">Клиент, позиции, налоги — сервер пересчитает итоги</p>
+            <h1 class="title">{{ t("createInvoice.heading") }}</h1>
+            <p class="sub">{{ t("createInvoice.sub") }}</p>
           </div>
-          <RouterLink class="ghost-link" to="/invoices">← К списку</RouterLink>
+          <RouterLink class="ghost-link" to="/invoices">{{ t("createInvoice.back") }}</RouterLink>
         </div>
 
         <div class="glass-panel form-wrap">
