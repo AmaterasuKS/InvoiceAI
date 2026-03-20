@@ -3,10 +3,12 @@ import { ref, watch, nextTick, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import gsap from "gsap";
 import { useAuthStore } from "@/stores/auth";
+import { useToastStore } from "@/stores/toast";
 
 const route = useRoute();
 const router = useRouter();
 const auth = useAuthStore();
+const toast = useToastStore();
 
 const mode = ref("login");
 const email = ref("");
@@ -57,12 +59,14 @@ async function onSubmit() {
         email: email.value.trim(),
         password: password.value,
       });
+      toast.success("С возвращением!");
     } else {
       await auth.register({
         email: email.value.trim(),
         password: password.value,
         companyName: companyName.value.trim() || undefined,
       });
+      toast.success("Аккаунт создан — добро пожаловать!");
     }
     const redirect = typeof route.query.redirect === "string" ? route.query.redirect : "/";
     await router.replace(redirect);
@@ -191,7 +195,7 @@ onMounted(async () => {
               {{ localError || auth.error }}
             </p>
 
-            <button class="auth__submit auth-reveal" type="submit" :disabled="auth.loading">
+            <button v-ripple class="auth__submit auth-reveal" type="submit" :disabled="auth.loading">
               <span class="auth__submit-text">{{ auth.loading ? "Отправка…" : mode === "login" ? "Войти" : "Создать аккаунт" }}</span>
               <span class="auth__ripple" aria-hidden="true" />
             </button>

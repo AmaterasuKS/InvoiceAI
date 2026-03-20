@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
+import { useToastStore } from "@/stores/toast";
 
 const props = defineProps({
   title: {
@@ -22,6 +23,7 @@ const emit = defineEmits(["menu-click", "notifications-click"]);
 
 const router = useRouter();
 const auth = useAuthStore();
+const toast = useToastStore();
 
 const menuOpen = ref(false);
 
@@ -45,6 +47,7 @@ const subtitle = computed(() => auth.user?.email || "");
 async function logout() {
   menuOpen.value = false;
   auth.logout();
+  toast.info("Вы вышли из аккаунта");
   await router.push({ name: "auth" });
 }
 
