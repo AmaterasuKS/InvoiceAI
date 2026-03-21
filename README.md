@@ -28,7 +28,8 @@
 
 ## Screenshots
 
-> Coming soon — screenshot placeholder
+<img width="1919" height="968" alt="image" src="https://github.com/user-attachments/assets/0bf46013-9a41-4530-9ae1-5a7e0054c47b" />
+
 
 ---
 
