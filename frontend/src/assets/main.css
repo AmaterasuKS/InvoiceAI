@@ -19,6 +19,45 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+/* Глобальный скролл страницы (узкий, тёмный трек, светлая «пилюля») */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.55) rgba(10, 10, 15, 0.95);
+}
+
+html::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html::-webkit-scrollbar-track {
+  background: rgba(10, 10, 15, 0.95);
+  border-radius: 100px;
+  margin: 4px 0;
+}
+
+html::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.42);
+  border-radius: 100px;
+  border: 2px solid rgba(10, 10, 15, 0.95);
+  background-clip: padding-box;
+}
+
+html::-webkit-scrollbar-thumb:hover {
+  background: rgba(203, 213, 225, 0.55);
+  border-color: rgba(10, 10, 15, 0.88);
+}
+
+html::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+html::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 #app {
   min-height: 100vh;
 }

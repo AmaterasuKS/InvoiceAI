@@ -74,37 +74,10 @@ const filteredInvoices = computed(() => {
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth() - periodMonths.value);
   const t = cutoff.getTime();
-  const out = list.filter((inv) => {
+  return list.filter((inv) => {
     const d = parseInvoiceIssueDate(inv.issueDate);
     return d.getTime() >= t;
   });
-  // #region agent log
-  if (list.length && periodMonths.value) {
-    const sample = list[0].issueDate;
-    const legacyMs = new Date(`${sample}T00:00:00`).getTime();
-    const fixedMs = parseInvoiceIssueDate(sample).getTime();
-    fetch("http://127.0.0.1:7702/ingest/9aecaa91-f2eb-4429-9bc4-263345cc6aa4", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "9c61c5" },
-      body: JSON.stringify({
-        sessionId: "9c61c5",
-        runId: "post-fix",
-        hypothesisId: "A",
-        location: "Dashboard.vue:filteredInvoices",
-        message: "period filter date parse",
-        data: {
-          sampleShape: typeof sample,
-          legacyInvalid: Number.isNaN(legacyMs),
-          fixedInvalid: Number.isNaN(fixedMs),
-          outLen: out.length,
-          listLen: list.length,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-  }
-  // #endregion
-  return out;
 });
 
 const paidInvoices = computed(() => filteredInvoices.value.filter((i) => i.status === "paid"));
