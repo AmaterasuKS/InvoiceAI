@@ -1,5 +1,28 @@
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+import { existsSync, readFileSync } from "fs";
 import express from "express";
+
+/** Всегда грузим `backend/.env`, даже если процесс запущен не из папки backend (IDE, корень репо). */
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const envPath = path.resolve(__dirname, "../.env");
+const envFileExists = existsSync(envPath);
+/** Пустая строка из Docker/хоста уже в process.env → обычный dotenv не перезаписывает. + BOM в начале файла (Windows). */
+if (envFileExists) {
+  const raw = readFileSync(envPath, "utf8").replace(/^\uFEFF/, "");
+  const parsed = dotenv.parse(raw);
+  for (const [key, value] of Object.entries(parsed)) {
+    if (value !== undefined) {
+      process.env[key] = value;
+    }
+  }
+} else {
+  dotenv.config();
+  if (!process.env.GROQ_API_KEY?.trim()) {
+    console.warn(`[config] Нет файла ${envPath} — берём переменные только из окружения (Docker env_file, systemd и т.д.)`);
+  }
+}
 import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
@@ -47,10 +70,13 @@ const apiLimiter = rateLimit({
 app.use("/api/", apiLimiter);
 
 app.get("/health", (req, res) => {
+  const groq = process.env.GROQ_API_KEY?.trim();
   res.json({
     ok: true,
     service: "invoiceai-api",
     time: new Date().toISOString(),
+    /** Удобно проверить, что ключ попал в процесс (без раскрытия значения). */
+    groqConfigured: Boolean(groq && groq.length >= 10),
   });
 });
 

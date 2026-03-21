@@ -493,6 +493,7 @@ onMounted(() => {
   background: rgba(10, 10, 15, 0.65);
   color: #e2e8f0;
   font: inherit;
+  resize: none;
 }
 
 .form-error {

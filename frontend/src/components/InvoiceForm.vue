@@ -2,6 +2,7 @@
 import { ref, computed, watch, onMounted } from "vue";
 import { useI18n } from "vue-i18n";
 import { useInvoicesStore } from "@/stores/invoices";
+import CurrencyCombobox from "@/components/CurrencyCombobox.vue";
 
 const { t } = useI18n();
 
@@ -173,11 +174,20 @@ onMounted(async () => {
         </select>
       </div>
 
-      <div class="field">
+      <div class="field field--invoice-number">
         <label class="field__label" for="number">{{ t("invoiceForm.number") }}</label>
-        <div class="field__row">
-          <input id="number" v-model="invoiceNumber" class="field__input" type="text" />
-          <button type="button" class="mini-btn" @click="loadNumber">{{ t("invoiceForm.generate") }}</button>
+        <div class="field__row field__row--number">
+          <input
+            id="number"
+            v-model="invoiceNumber"
+            class="field__input field__input--invoice-number"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button type="button" class="mini-btn mini-btn--compact" @click="loadNumber">
+            {{ t("invoiceForm.generate") }}
+          </button>
         </div>
       </div>
 
@@ -193,7 +203,7 @@ onMounted(async () => {
 
       <div class="field">
         <label class="field__label" for="currency">{{ t("invoiceForm.currency") }}</label>
-        <input id="currency" v-model="currency" class="field__input" maxlength="8" />
+        <CurrencyCombobox v-model="currency" />
       </div>
 
       <div class="field">
@@ -295,6 +305,34 @@ onMounted(async () => {
   grid-column: 1 / -1;
 }
 
+/* Номер инвойса: больше места в сетке + минимальная ширина поля (не обрезается INV-…) */
+.field--invoice-number {
+  grid-column: span 2;
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .field--invoice-number {
+    grid-column: span 1;
+  }
+}
+
+.field__row--number {
+  align-items: stretch;
+}
+
+.field__input--invoice-number {
+  flex: 1 1 auto;
+  min-width: min(100%, 17rem);
+  font-variant-numeric: tabular-nums;
+}
+
+.field--invoice-number .mini-btn--compact {
+  flex: 0 0 auto;
+  padding: 10px 10px;
+  font-size: 13px;
+}
+
 .field__label {
   font-size: 12px;
   text-transform: uppercase;
@@ -312,6 +350,7 @@ onMounted(async () => {
   color: #e2e8f0;
   font: inherit;
   outline: none;
+  resize: none;
   transition:
     border-color 0.2s ease,
     box-shadow 0.2s ease;

@@ -7,8 +7,12 @@ const MAX_HISTORY_MESSAGES = 10;
 const MODEL_ID = "llama-3.3-70b-versatile";
 
 function getGroqClient() {
-  const key = process.env.GROQ_API_KEY;
-  if (!key || key.includes("вставить")) {
+  const raw = process.env.GROQ_API_KEY;
+  const key = typeof raw === "string" ? raw.trim() : "";
+  // Плейсхолдеры из README / шаблонов (не считаем за ключ)
+  const placeholderRegexHit = /вставить|your[_-]?key|changeme|placeholder|example/i.test(key);
+  const looksLikePlaceholder = !key || placeholderRegexHit || key.length < 10;
+  if (looksLikePlaceholder) {
     throw new Error("GROQ_API_KEY не задан или нужно указать реальный ключ Groq");
   }
   return new Groq({ apiKey: key });

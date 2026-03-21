@@ -31,6 +31,11 @@ a {
   background: rgba(99, 102, 241, 0.35);
 }
 
+/* Все многострочные поля без ручного изменения размера (как в модалке клиента) */
+textarea {
+  resize: none;
+}
+
 /* Page transitions (усиливаются в App.vue) */
 .page-transition-root {
   min-height: 100vh;

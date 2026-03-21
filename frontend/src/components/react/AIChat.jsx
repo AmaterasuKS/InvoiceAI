@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { api, getApiErrorMessage } from "@/api";
 import { i18n } from "@/i18n";
@@ -22,7 +22,20 @@ export default function AIChat(props = {}) {
   const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState([]);
   const listRef = useRef(null);
+  const inputRef = useRef(null);
   const typingTimers = useRef(new Set());
+
+  const TEXTAREA_MAX_PX = 280;
+  const TEXTAREA_MIN_PX = 48;
+
+  const adjustTextareaHeight = useCallback(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const next = Math.min(Math.max(el.scrollHeight, TEXTAREA_MIN_PX), TEXTAREA_MAX_PX);
+    el.style.height = `${next}px`;
+    el.style.overflowY = el.scrollHeight > TEXTAREA_MAX_PX ? "auto" : "hidden";
+  }, []);
 
   const clearTypingTimers = useCallback(() => {
     typingTimers.current.forEach((id) => clearInterval(id));
@@ -40,6 +53,10 @@ export default function AIChat(props = {}) {
   useEffect(() => {
     scrollToBottom();
   }, [messages, open, scrollToBottom]);
+
+  useLayoutEffect(() => {
+    adjustTextareaHeight();
+  }, [input, open, adjustTextareaHeight]);
 
   const startTyping = useCallback(
     (msgId, fullText) => {
@@ -103,7 +120,6 @@ export default function AIChat(props = {}) {
           text: "",
           full: reply,
           typing: true,
-          meta: data?.model ? `model: ${data.model}` : "",
         },
       ]);
       startTyping(assistantId, reply);
@@ -118,7 +134,6 @@ export default function AIChat(props = {}) {
           text: "",
           full: fallback,
           typing: true,
-          meta: "",
           isError: true,
         },
       ]);
@@ -152,31 +167,29 @@ export default function AIChat(props = {}) {
 
   return (
     <div style={styles.root}>
-      <motion.button
-        type="button"
-        aria-label={open ? copy.close : copy.open}
-        style={styles.fab}
-        onClick={() => setOpen((v) => !v)}
-        whileHover={reduceMotion ? {} : { scale: 1.05, y: -2 }}
-        whileTap={reduceMotion ? {} : { scale: 0.96 }}
-        animate={open ? { rotate: 0 } : bubblePulse}
-        transition={
-          open
-            ? { duration: 0.25 }
-            : { duration: 2.8, repeat: Infinity, ease: "easeInOut" }
-        }
-      >
-        <span style={styles.fabGlow} aria-hidden />
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
-          <path
-            d="M12 3c5 0 9 3.6 9 8 0 2.2-1 4.2-2.6 5.7L21 21l-4.7-1.4C14.8 20.5 13.4 21 12 21 7 21 3 17.4 3 13s4-8 9-8Z"
-            stroke="white"
-            strokeWidth="1.7"
-            strokeLinejoin="round"
-          />
-          <path d="M8.5 12.5h7M8.5 9.5h4" stroke="white" strokeWidth="1.7" strokeLinecap="round" />
-        </svg>
-      </motion.button>
+      {!open && (
+        <motion.button
+          type="button"
+          aria-label={copy.open}
+          style={styles.fab}
+          onClick={() => setOpen(true)}
+          whileHover={reduceMotion ? {} : { scale: 1.05, y: -2 }}
+          whileTap={reduceMotion ? {} : { scale: 0.96 }}
+          animate={bubblePulse}
+          transition={{ duration: 2.8, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <span style={styles.fabGlow} aria-hidden />
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden>
+            <path
+              d="M12 3c5 0 9 3.6 9 8 0 2.2-1 4.2-2.6 5.7L21 21l-4.7-1.4C14.8 20.5 13.4 21 12 21 7 21 3 17.4 3 13s4-8 9-8Z"
+              stroke="white"
+              strokeWidth="1.7"
+              strokeLinejoin="round"
+            />
+            <path d="M8.5 12.5h7M8.5 9.5h4" stroke="white" strokeWidth="1.7" strokeLinecap="round" />
+          </svg>
+        </motion.button>
+      )}
 
       <AnimatePresence>
         {open && (
@@ -198,7 +211,7 @@ export default function AIChat(props = {}) {
                 </button>
               </div>
 
-              <div ref={listRef} style={styles.messages}>
+              <div ref={listRef} className="ai-chat-scroll-target" style={styles.messages}>
                 {messages.length === 0 && (
                   <p style={styles.hint}>{copy.hint}</p>
                 )}
@@ -221,7 +234,6 @@ export default function AIChat(props = {}) {
                         {m.text}
                         {m.typing && <span style={styles.caret} aria-hidden />}
                       </p>
-                      {m.meta ? <p style={styles.meta}>{m.meta}</p> : null}
                     </div>
                   </div>
                 ))}
@@ -229,8 +241,10 @@ export default function AIChat(props = {}) {
 
               <div style={styles.composer}>
                 <textarea
+                  ref={inputRef}
+                  className="ai-chat-scroll-target"
                   style={styles.textarea}
-                  rows={2}
+                  rows={1}
                   placeholder={copy.placeholder}
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
@@ -287,11 +301,11 @@ const styles = {
   },
   panelWrap: {
     pointerEvents: "auto",
-    width: "min(420px, calc(100vw - 40px))",
+    width: "min(560px, calc(100vw - 28px))",
     perspective: 1200,
   },
   panel: {
-    borderRadius: 20,
+    borderRadius: 22,
     overflow: "hidden",
     border: "1px solid rgba(255,255,255,0.1)",
     background: "linear-gradient(160deg, rgba(18,18,26,0.98), rgba(10,10,15,0.95))",
@@ -300,7 +314,8 @@ const styles = {
     WebkitBackdropFilter: "blur(18px)",
     display: "flex",
     flexDirection: "column",
-    maxHeight: "min(640px, 80vh)",
+    maxHeight: "min(780px, 88vh)",
+    minHeight: 420,
   },
   panelHeader: {
     display: "flex",
@@ -333,9 +348,10 @@ const styles = {
     lineHeight: 1,
   },
   messages: {
-    padding: 12,
+    padding: "14px 14px 10px",
     overflowY: "auto",
-    flex: 1,
+    flex: "1 1 auto",
+    minHeight: 220,
     display: "flex",
     flexDirection: "column",
     gap: 10,
@@ -374,11 +390,6 @@ const styles = {
     lineHeight: 1.55,
     whiteSpace: "pre-wrap",
   },
-  meta: {
-    margin: "8px 0 0",
-    fontSize: 11,
-    color: "#64748b",
-  },
   caret: {
     display: "inline-block",
     width: 8,
@@ -388,34 +399,43 @@ const styles = {
     animation: "ai-caret 1s steps(1) infinite",
   },
   composer: {
-    display: "grid",
-    gridTemplateColumns: "1fr auto",
-    gap: 8,
-    padding: 12,
+    display: "flex",
+    flexDirection: "column",
+    gap: 10,
+    padding: "14px 14px 16px",
     borderTop: "1px solid rgba(255,255,255,0.08)",
-    alignItems: "end",
+    flexShrink: 0,
   },
   textarea: {
     width: "100%",
+    boxSizing: "border-box",
+    minHeight: 48,
+    maxHeight: 280,
+    height: 48,
     resize: "none",
-    borderRadius: 14,
+    overflow: "hidden",
+    borderRadius: 16,
     border: "1px solid rgba(255,255,255,0.12)",
     background: "rgba(10,10,15,0.75)",
     color: "#e2e8f0",
     font: "inherit",
-    padding: "10px 12px",
+    fontSize: 15,
+    lineHeight: 1.5,
+    padding: "12px 14px",
     outline: "none",
   },
   sendBtn: {
     border: "none",
     borderRadius: 14,
-    padding: "12px 14px",
+    padding: "13px 18px",
     fontWeight: 800,
+    fontSize: 14,
     color: "#fff",
     cursor: "pointer",
     background: "linear-gradient(135deg, #6366f1, #8b5cf6)",
     boxShadow: "0 12px 30px rgba(99,102,241,0.35)",
-    minWidth: 110,
+    alignSelf: "flex-end",
+    minWidth: 140,
   },
 };
 
@@ -424,4 +444,43 @@ if (typeof document !== "undefined" && !document.getElementById("ai-chat-keyfram
   s.id = "ai-chat-keyframes";
   s.textContent = `@keyframes ai-caret { 50% { opacity: 0; } }`;
   document.head.appendChild(s);
+}
+
+if (typeof document !== "undefined" && !document.getElementById("ai-chat-scrollbar-styles")) {
+  const sb = document.createElement("style");
+  sb.id = "ai-chat-scrollbar-styles";
+  sb.textContent = `
+.ai-chat-scroll-target {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(99, 102, 241, 0.55) rgba(15, 23, 42, 0.55);
+}
+.ai-chat-scroll-target::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.ai-chat-scroll-target::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.65);
+  border-radius: 100px;
+  margin: 4px 0;
+}
+.ai-chat-scroll-target::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.55), rgba(139, 92, 246, 0.42));
+  border-radius: 100px;
+  border: 2px solid rgba(10, 10, 15, 0.5);
+  background-clip: padding-box;
+}
+.ai-chat-scroll-target::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(129, 140, 248, 0.75), rgba(167, 139, 250, 0.5));
+  border-color: rgba(10, 10, 15, 0.35);
+}
+.ai-chat-scroll-target::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+.ai-chat-scroll-target::-webkit-scrollbar-corner {
+  background: transparent;
+}
+`;
+  document.head.appendChild(sb);
 }

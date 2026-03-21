@@ -47,6 +47,19 @@ const rateEl = ref(null);
 const unpaidCountEl = ref(null);
 const contentRef = ref(null);
 
+/**
+ * issue_date из API: YYYY-MM-DD или полная ISO-строка.
+ * Нельзя склеивать `${date}T00:00:00`, если в date уже есть время — будет Invalid Date.
+ */
+function parseInvoiceIssueDate(raw) {
+  if (raw == null || raw === "") return new Date(NaN);
+  const s = String(raw).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) {
+    return new Date(`${s}T00:00:00`);
+  }
+  return new Date(s);
+}
+
 const clientNameById = computed(() => {
   const map = new Map();
   for (const c of clientsStore.items) {
@@ -61,10 +74,37 @@ const filteredInvoices = computed(() => {
   const cutoff = new Date();
   cutoff.setMonth(cutoff.getMonth() - periodMonths.value);
   const t = cutoff.getTime();
-  return list.filter((inv) => {
-    const d = new Date(`${inv.issueDate}T00:00:00`);
+  const out = list.filter((inv) => {
+    const d = parseInvoiceIssueDate(inv.issueDate);
     return d.getTime() >= t;
   });
+  // #region agent log
+  if (list.length && periodMonths.value) {
+    const sample = list[0].issueDate;
+    const legacyMs = new Date(`${sample}T00:00:00`).getTime();
+    const fixedMs = parseInvoiceIssueDate(sample).getTime();
+    fetch("http://127.0.0.1:7702/ingest/9aecaa91-f2eb-4429-9bc4-263345cc6aa4", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "9c61c5" },
+      body: JSON.stringify({
+        sessionId: "9c61c5",
+        runId: "post-fix",
+        hypothesisId: "A",
+        location: "Dashboard.vue:filteredInvoices",
+        message: "period filter date parse",
+        data: {
+          sampleShape: typeof sample,
+          legacyInvalid: Number.isNaN(legacyMs),
+          fixedInvalid: Number.isNaN(fixedMs),
+          outLen: out.length,
+          listLen: list.length,
+        },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+  }
+  // #endregion
+  return out;
 });
 
 const paidInvoices = computed(() => filteredInvoices.value.filter((i) => i.status === "paid"));
@@ -94,7 +134,9 @@ const unpaidAll = computed(() =>
 );
 
 const unpaidHighlight = computed(() => {
-  const list = [...unpaidAll.value].sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate));
+  const list = [...unpaidAll.value].sort(
+    (a, b) => parseInvoiceIssueDate(a.dueDate) - parseInvoiceIssueDate(b.dueDate)
+  );
   return list.slice(0, 6);
 });
 
