@@ -28,7 +28,12 @@
 
 ## Screenshots
 
-<img width="1919" height="968" alt="image" src="https://github.com/user-attachments/assets/0bf46013-9a41-4530-9ae1-5a7e0054c47b" />
+<img width="1919" height="853" alt="image" src="https://github.com/user-attachments/assets/dd1059ce-5205-4aa1-8c5a-121af0018bdb" />
+<img width="1919" height="859" alt="image" src="https://github.com/user-attachments/assets/9b69bfb5-ad37-4a20-8f28-4c01430bf4e5" />
+<img width="1919" height="835" alt="image" src="https://github.com/user-attachments/assets/22127b9c-2983-4d44-a357-2a9889b379c4" />
+
+
+
 
 
 ---
